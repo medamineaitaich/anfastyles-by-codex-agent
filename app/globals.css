@@ -1,0 +1,121 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f4f0e8;
+  --foreground: #1d271d;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-sand: #f4f0e8;
+  --color-sand-strong: #ece5d9;
+  --color-ink: #1d271d;
+  --color-muted: #6e7167;
+  --color-forest: #2f5725;
+  --color-forest-soft: #3d6931;
+  --color-moss: #5d7f51;
+  --color-clay: #ba8a4d;
+  --color-cream: #faf7f1;
+  --color-border: rgba(34, 53, 30, 0.14);
+  --font-sans: var(--font-body);
+  --font-display: var(--font-display);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-body), sans-serif;
+}
+
+a,
+button,
+input,
+textarea,
+select {
+  transition:
+    color 0.2s ease,
+    border-color 0.2s ease,
+    background-color 0.2s ease,
+    opacity 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+}
+
+::selection {
+  background: rgba(61, 105, 49, 0.18);
+}
+
+.display-font {
+  font-family: var(--font-display), sans-serif;
+}
+
+.content-shell {
+  @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
+}
+
+.card-surface {
+  @apply rounded-[2rem] border border-border bg-white/70 shadow-[0_16px_48px_rgba(29,39,29,0.06)] backdrop-blur;
+}
+
+.hero-panel {
+  background:
+    linear-gradient(120deg, rgba(31, 65, 29, 0.92), rgba(47, 87, 37, 0.86)),
+    radial-gradient(circle at 20% 20%, rgba(153, 182, 113, 0.3), transparent 35%),
+    radial-gradient(circle at 80% 0%, rgba(186, 138, 77, 0.22), transparent 28%),
+    linear-gradient(160deg, #28461f, #365c2b 60%, #27411f);
+}
+
+.leaf-grid {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+  background-position: center;
+  background-size: 52px 52px;
+}
+
+.prose-woo {
+  @apply space-y-4 text-[0.98rem] leading-7 text-muted;
+}
+
+.prose-woo p,
+.prose-woo ul,
+.prose-woo ol {
+  @apply text-muted;
+}
+
+.prose-woo ul {
+  @apply ml-5 list-disc;
+}
+
+.prose-woo ol {
+  @apply ml-5 list-decimal;
+}
+
+.prose-woo a {
+  @apply text-forest underline underline-offset-4;
+}
+
+.fade-in-up {
+  animation: fadeInUp 0.7s ease forwards;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
