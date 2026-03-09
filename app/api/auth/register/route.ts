@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { createSession } from "@/lib/session";
+import { createSession, saveCustomerHint } from "@/lib/session";
 import { createCustomer, findCustomerByEmail } from "@/lib/woo/client";
 import { slugify } from "@/lib/utils";
 
@@ -34,13 +34,16 @@ export async function POST(request: Request) {
       username,
     });
 
-    await createSession({
+    const sessionPayload = {
       customerId: customer.id,
       email: customer.email,
       username: customer.username,
       firstName: customer.first_name,
       lastName: customer.last_name,
-    });
+    };
+
+    await createSession(sessionPayload);
+    await saveCustomerHint(sessionPayload);
 
     return NextResponse.json({ ok: true });
   } catch (error) {

@@ -44,6 +44,8 @@ next-env.d.ts
 # local diagnostics and test artifacts
 /test-results/
 *.log
+devserver.err
+devserver.log
 *-step.html
 *-success.html
 *-check.html

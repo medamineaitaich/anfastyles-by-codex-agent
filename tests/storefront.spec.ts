@@ -32,6 +32,16 @@ test("register, login state, and account dashboard work", async ({ page }) => {
 
   await expect(page).toHaveURL(/\/account$/, { timeout: 20000 });
   await expect(page.getByRole("heading", { name: /Hello, Codex/i })).toBeVisible();
+
+  await page.getByRole("button", { name: /Logout/i }).click();
+  await expect(page).toHaveURL(/\/$/, { timeout: 20000 });
+
+  await page.goto("/login");
+  await page.getByLabel("Email Address").fill(email);
+  await page.getByLabel("Password").fill(password);
+  await page.getByRole("button", { name: /Sign In/i }).click();
+  await expect(page).toHaveURL(/\/account$/, { timeout: 20000 });
+  await expect(page.getByRole("heading", { name: /Hello, Codex/i })).toBeVisible();
 });
 
 test("authenticated checkout creates a Woo order visible in account history", async ({ page }) => {

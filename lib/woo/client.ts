@@ -50,7 +50,7 @@ function buildQuery(params?: Record<string, string | number | undefined | string
   return output ? `?${output}` : "";
 }
 
-async function fetchWoo<T>(
+async function fetchWooResponse(
   path: string,
   init?: RequestInit,
   mode: "admin" | "store" = "store",
@@ -91,7 +91,80 @@ async function fetchWoo<T>(
     throw new Error(`WooCommerce request failed (${response.status}): ${detail}`);
   }
 
+  return response;
+}
+
+async function fetchWoo<T>(
+  path: string,
+  init?: RequestInit,
+  mode: "admin" | "store" = "store",
+) {
+  const response = await fetchWooResponse(path, init, mode);
   return (await response.json()) as T;
+}
+
+async function fetchWooPage<T>(
+  path: string,
+  init?: RequestInit,
+  mode: "admin" | "store" = "store",
+) {
+  const response = await fetchWooResponse(path, init, mode);
+  const totalPagesHeader = response.headers.get("X-WP-TotalPages");
+  const totalPages = totalPagesHeader ? Number(totalPagesHeader) : null;
+
+  return {
+    items: (await response.json()) as T[],
+    totalPages: Number.isFinite(totalPages) ? totalPages : null,
+  };
+}
+
+function normalizeEmail(email: string) {
+  return email.trim().toLowerCase();
+}
+
+function matchCustomerByEmail(customers: WooCustomer[], normalizedEmail: string) {
+  return customers.find((customer) => normalizeEmail(customer.email) === normalizedEmail) ?? null;
+}
+
+async function searchCustomersByTerm(term: string, normalizedEmail: string) {
+  let page = 1;
+
+  while (true) {
+    const searchLookup = await fetchWooPage<WooCustomer>(
+      `/customers${buildQuery({
+        search: term,
+        per_page: 100,
+        page,
+        orderby: "id",
+        order: "desc",
+      })}`,
+      undefined,
+      "admin",
+    );
+
+    const match = matchCustomerByEmail(searchLookup.items, normalizedEmail);
+    if (match) {
+      return match;
+    }
+
+    const reachedLastPage =
+      searchLookup.totalPages !== null
+        ? page >= searchLookup.totalPages
+        : searchLookup.items.length < 100;
+
+    if (!searchLookup.items.length || reachedLastPage) {
+      return null;
+    }
+
+    page += 1;
+  }
+}
+
+function getCustomerSearchTerms(normalizedEmail: string) {
+  const localPart = normalizedEmail.split("@")[0] ?? "";
+  const localPartTokens = localPart.split(/[^a-z0-9]+/).filter((token) => token.length >= 3);
+
+  return [...new Set([normalizedEmail, localPart, ...localPartTokens])];
 }
 
 export const getCategories = cache(async () => {
@@ -255,17 +328,77 @@ export async function createCustomer(input: {
 }
 
 export async function findCustomerByEmail(email: string) {
-  const customers = await fetchWoo<WooCustomer[]>(
-    `/customers${buildQuery({
-      per_page: 100,
-    })}`,
-    undefined,
-    "admin",
-  );
+  const normalizedEmail = normalizeEmail(email);
 
-  return (
-    customers.find((customer) => customer.email.toLowerCase() === email.toLowerCase()) ?? null
-  );
+  if (!normalizedEmail) {
+    return null;
+  }
+
+  try {
+    const directLookup = await fetchWooPage<WooCustomer>(
+      `/customers${buildQuery({
+        email: normalizedEmail,
+        per_page: 100,
+      })}`,
+      undefined,
+      "admin",
+    );
+
+    const directMatch = matchCustomerByEmail(directLookup.items, normalizedEmail);
+
+    if (directMatch) {
+      return directMatch;
+    }
+  } catch {
+    // Some Woo backends do not support `email=` consistently; fall back to pagination below.
+  }
+
+  for (const term of getCustomerSearchTerms(normalizedEmail)) {
+    if (!term) {
+      continue;
+    }
+
+    try {
+      const searchMatch = await searchCustomersByTerm(term, normalizedEmail);
+
+      if (searchMatch) {
+        return searchMatch;
+      }
+    } catch {
+      // Some Woo backends also vary on `search=`; keep the full pagination fallback below.
+    }
+  }
+
+  let page = 1;
+  while (true) {
+    const customers = await fetchWooPage<WooCustomer>(
+      `/customers${buildQuery({
+        per_page: 100,
+        page,
+        orderby: "id",
+        order: "desc",
+      })}`,
+      undefined,
+      "admin",
+    );
+
+    const match = matchCustomerByEmail(customers.items, normalizedEmail);
+
+    if (match) {
+      return match;
+    }
+
+    const reachedLastPage =
+      customers.totalPages !== null
+        ? page >= customers.totalPages
+        : customers.items.length < 100;
+
+    if (!customers.items.length || reachedLastPage) {
+      return null;
+    }
+
+    page += 1;
+  }
 }
 
 export async function getCustomer(customerId: number) {
