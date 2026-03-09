@@ -2,6 +2,7 @@ import "server-only";
 
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
+import type { WooCustomer } from "@/lib/woo/types";
 
 export type SessionPayload = {
   customerId: number;
@@ -13,6 +14,12 @@ export type SessionPayload = {
 
 const SESSION_COOKIE = "anfastyles-session";
 const CUSTOMER_HINT_COOKIE = "anfastyles-customer-hint";
+const PROFILE_SNAPSHOT_COOKIE = "anfastyles-profile-snapshot";
+
+export type ProfileSnapshot = Pick<
+  WooCustomer,
+  "id" | "email" | "username" | "first_name" | "last_name" | "billing" | "shipping"
+>;
 
 function getSecret() {
   const secret = process.env.SESSION_SECRET;
@@ -90,6 +97,35 @@ export async function getCustomerHint() {
   try {
     const verified = await jwtVerify<SessionPayload>(token, getSecret());
     return verified.payload;
+  } catch {
+    return null;
+  }
+}
+
+export async function saveProfileSnapshot(customer: ProfileSnapshot) {
+  const token = await createToken(customer, "12h");
+  const cookieStore = await cookies();
+
+  cookieStore.set(PROFILE_SNAPSHOT_COOKIE, token, {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: 60 * 60 * 12,
+  });
+}
+
+export async function getProfileSnapshot(customerId: number) {
+  const cookieStore = await cookies();
+  const token = cookieStore.get(PROFILE_SNAPSHOT_COOKIE)?.value;
+
+  if (!token) {
+    return null;
+  }
+
+  try {
+    const verified = await jwtVerify<ProfileSnapshot>(token, getSecret());
+    return verified.payload.id === customerId ? verified.payload : null;
   } catch {
     return null;
   }

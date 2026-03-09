@@ -97,3 +97,37 @@ test("logout and login cycle work with Woo-backed auth", async ({ page }) => {
   await page.getByRole("button", { name: /Sign In/i }).click();
   await expect(page).toHaveURL(/\/account$/, { timeout: 20000 });
 });
+
+test("profile updates refresh account UI immediately and after reload", async ({ page }) => {
+  const stamp = Date.now();
+  const email = `codex-profile-${stamp}@example.com`;
+  const password = "Codex!Test123";
+  const firstName = "Codex";
+  const updatedFirstName = "Forest";
+
+  await page.goto("/register");
+  await page.getByLabel("First Name").fill(firstName);
+  await page.getByLabel("Last Name").fill("Profile");
+  await page.getByLabel("Email Address").fill(email);
+  await page.getByLabel("Password").fill(password);
+  await page.getByRole("button", { name: /Create account/i }).click();
+
+  await expect(page).toHaveURL(/\/account$/, { timeout: 20000 });
+  await expect(page.getByRole("heading", { name: new RegExp(`Hello, ${firstName}`, "i") })).toBeVisible();
+
+  const firstNameInput = page.getByLabel("First Name");
+  await firstNameInput.fill(updatedFirstName);
+  await page.getByRole("button", { name: /Save changes/i }).click();
+
+  await expect(page.getByText("Account updated.")).toBeVisible();
+  await expect(firstNameInput).toHaveValue(updatedFirstName);
+  await expect(
+    page.getByRole("heading", { name: new RegExp(`Hello, ${updatedFirstName}`, "i") }),
+  ).toBeVisible();
+
+  await page.reload();
+  await expect(
+    page.getByRole("heading", { name: new RegExp(`Hello, ${updatedFirstName}`, "i") }),
+  ).toBeVisible();
+  await expect(page.getByLabel("First Name")).toHaveValue(updatedFirstName);
+});

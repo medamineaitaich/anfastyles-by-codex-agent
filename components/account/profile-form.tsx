@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { WooCustomer } from "@/lib/woo/types";
 
-export function ProfileForm({ customer }: { customer: WooCustomer }) {
-  const [form, setForm] = useState({
+function buildProfileForm(customer: WooCustomer) {
+  return {
     first_name: customer.first_name,
     last_name: customer.last_name,
     billing: {
@@ -28,9 +29,19 @@ export function ProfileForm({ customer }: { customer: WooCustomer }) {
       postcode: customer.shipping.postcode ?? "",
       country: customer.shipping.country ?? "US",
     },
-  });
+  };
+}
+
+export function ProfileForm({ customer }: { customer: WooCustomer }) {
+  const router = useRouter();
+  const [form, setForm] = useState(() => buildProfileForm(customer));
   const [message, setMessage] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const [isRefreshing, startRefresh] = useTransition();
+
+  useEffect(() => {
+    setForm(buildProfileForm(customer));
+  }, [customer]);
 
   async function submit() {
     setPending(true);
@@ -41,9 +52,24 @@ export function ProfileForm({ customer }: { customer: WooCustomer }) {
       body: JSON.stringify(form),
     });
 
-    const payload = (await response.json()) as { message?: string };
+    const payload = (await response.json()) as {
+      message?: string;
+      customer?: WooCustomer;
+    };
     setPending(false);
     setMessage(payload.message ?? (response.ok ? "Account updated." : "Unable to save changes."));
+
+    if (!response.ok) {
+      return;
+    }
+
+    if (payload.customer) {
+      setForm(buildProfileForm(payload.customer));
+    }
+
+    startRefresh(() => {
+      router.refresh();
+    });
   }
 
   return (
@@ -103,8 +129,8 @@ export function ProfileForm({ customer }: { customer: WooCustomer }) {
             />
           </label>
         </div>
-        <Button type="button" disabled={pending} onClick={submit}>
-          {pending ? "Saving..." : "Save changes"}
+        <Button type="button" disabled={pending || isRefreshing} onClick={submit}>
+          {pending || isRefreshing ? "Saving..." : "Save changes"}
         </Button>
         {message ? <p className="text-sm text-muted">{message}</p> : null}
       </div>
