@@ -44,7 +44,7 @@ export async function createSession(payload: SessionPayload) {
   });
 }
 
-async function createToken(payload: SessionPayload, expirationTime: string) {
+async function createToken<T extends Record<string, unknown>>(payload: T, expirationTime: string) {
   return new SignJWT(payload)
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
