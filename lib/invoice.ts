@@ -25,7 +25,7 @@ function addressBlock(order: WooOrder, type: "billing" | "shipping") {
     type === "billing" ? address.email : "",
     type === "billing" ? address.phone : "",
   ]
-    .filter(Boolean)
+    .filter((line): line is string => Boolean(line))
     .map((line) => `<div>${escapeHtml(line)}</div>`)
     .join("");
 }
