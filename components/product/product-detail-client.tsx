@@ -18,6 +18,28 @@ function normalizeAttributes(value?: Record<string, string>) {
   );
 }
 
+function findMatchingVariation(variations: WooVariation[], attributes: Record<string, string>) {
+  if (!variations.length) {
+    return null;
+  }
+
+  const normalized = normalizeAttributes(attributes);
+  return (
+    variations.find((variation) =>
+      variation.attributes.every((attribute) => {
+        const option = attribute.option?.toLowerCase();
+        if (!option) {
+          return true;
+        }
+
+        const selected =
+          normalized[attribute.name.toLowerCase()] ?? normalized[attribute.slug.toLowerCase()];
+        return !selected || selected === option;
+      }),
+    ) ?? variations[0]
+  );
+}
+
 export function ProductDetailClient({
   product,
   variations,
@@ -42,32 +64,17 @@ export function ProductDetailClient({
   const [selectedAttributes, setSelectedAttributes] =
     useState<Record<string, string>>(initialAttributes);
   const [quantity, setQuantity] = useState(1);
-  const [activeImage, setActiveImage] = useState(product.images[0]?.src ?? "");
+  const defaultMainImage =
+    product.images[0]?.src || groupedProducts[0]?.images[0]?.src || "";
+  const [activeImage, setActiveImage] = useState(defaultMainImage);
   const [reviewBody, setReviewBody] = useState("");
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewMessage, setReviewMessage] = useState<string | null>(null);
 
-  const selectedVariation = useMemo(() => {
-    if (!variations.length) {
-      return null;
-    }
-
-    const normalized = normalizeAttributes(selectedAttributes);
-    return (
-      variations.find((variation) =>
-        variation.attributes.every((attribute) => {
-          const option = attribute.option?.toLowerCase();
-          if (!option) {
-            return true;
-          }
-
-          const selected =
-            normalized[attribute.name.toLowerCase()] ?? normalized[attribute.slug.toLowerCase()];
-          return !selected || selected === option;
-        }),
-      ) ?? variations[0]
-    );
-  }, [selectedAttributes, variations]);
+  const selectedVariation = useMemo(
+    () => findMatchingVariation(variations, selectedAttributes),
+    [selectedAttributes, variations],
+  );
 
   const gallery = useMemo(() => {
     const hero =
@@ -88,6 +95,8 @@ export function ProductDetailClient({
 
   const displayPrice = selectedVariation?.price || product.price || product.regular_price;
   const displayDescription = selectedVariation?.description || product.description;
+  const shortDescription = product.short_description?.trim();
+
 
   function addCurrentSelection() {
     if (product.type === "grouped" || product.type === "external") {
@@ -174,7 +183,7 @@ export function ProductDetailClient({
             </div>
           </div>
 
-          <RichText html={product.short_description || displayDescription} />
+          {shortDescription ? <RichText html={product.short_description} /> : null}
 
           {product.type !== "grouped" ? (
             <div className="space-y-5 rounded-[2rem] border border-border bg-white/80 p-5">
@@ -197,7 +206,12 @@ export function ProductDetailClient({
                               : `rounded-full border px-4 py-2 text-sm font-semibold ${selected ? "border-forest bg-forest text-white" : "border-border bg-white text-ink"}`
                           }
                           onClick={() =>
-                            setSelectedAttributes((current) => ({ ...current, [attribute.name]: option }))
+                            setSelectedAttributes((current) => {
+                              const nextAttributes = { ...current, [attribute.name]: option };
+                              const nextVariation = findMatchingVariation(variations, nextAttributes);
+                              setActiveImage(nextVariation?.image?.src || defaultMainImage);
+                              return nextAttributes;
+                            })
                           }
                           title={option}
                         >
@@ -346,8 +360,7 @@ export function ProductDetailClient({
             </div>
           ) : (
             <div className="mt-6 space-y-3 text-sm leading-7 text-muted">
-              <p>Sign in to submit a verified review tied to your WooCommerce customer account.</p>
-              <ButtonLink href="/login">Sign in</ButtonLink>
+              <p>Verified purchase reviews are currently available for returning customers only.</p>
             </div>
           )}
         </div>

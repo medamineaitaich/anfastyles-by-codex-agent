@@ -1,10 +1,9 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { PAYMENT_OPTIONS } from "@/lib/constants";
 import type { WooCustomer } from "@/lib/woo/types";
-import { Button } from "@/components/ui/button";
+import { Button, ButtonLink } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { formatPriceFromCents } from "@/lib/utils";
@@ -12,12 +11,9 @@ import { useCart } from "@/providers/cart-provider";
 
 export function CheckoutPageClient({
   customer,
-  isAuthenticated,
 }: {
   customer?: WooCustomer | null;
-  isAuthenticated: boolean;
 }) {
-  const router = useRouter();
   const { items, subtotalCents, shippingCents, totalCents, clearCart } = useCart();
   const [paymentMethod, setPaymentMethod] = useState<"cod" | "manual">("cod");
   const [message, setMessage] = useState<string | null>(null);
@@ -81,13 +77,9 @@ export function CheckoutPageClient({
     clearCart();
     setSuccess({ orderId: payload.orderId, orderNumber: payload.orderNumber });
 
-    if (isAuthenticated) {
-      router.push(`/account/orders/${payload.orderId}?placed=1`);
-      router.refresh();
-    }
   }
 
-  if (success && !isAuthenticated) {
+  if (success) {
     return (
       <section className="content-shell py-16">
         <div className="card-surface mx-auto max-w-3xl p-10 text-center">
@@ -100,6 +92,16 @@ export function CheckoutPageClient({
           <p className="mt-4 text-base leading-7 text-muted">
             Your order number is #{success.orderNumber}. Keep it for future tracking and support.
           </p>
+          <div className="mt-8 flex flex-wrap justify-center gap-3">
+            <ButtonLink
+              href={`/api/invoice/${success.orderId}?email=${encodeURIComponent(form.billing.email)}`}
+            >
+              Download invoice
+            </ButtonLink>
+            <ButtonLink href="/shop" variant="secondary">
+              Continue shopping
+            </ButtonLink>
+          </div>
         </div>
       </section>
     );

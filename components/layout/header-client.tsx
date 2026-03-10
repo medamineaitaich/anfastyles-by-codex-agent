@@ -2,13 +2,13 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Menu, Search, ShoppingBag, User, X } from "lucide-react";
+import { Menu, Search, ShoppingBag, X } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { NAV_LINKS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { useCart } from "@/providers/cart-provider";
 
-export function HeaderClient({ isAuthenticated }: { isAuthenticated: boolean }) {
+export function HeaderClient() {
   const pathname = usePathname();
   const router = useRouter();
   const { openDrawer, totalItems } = useCart();
@@ -68,13 +68,6 @@ export function HeaderClient({ isAuthenticated }: { isAuthenticated: boolean }) 
           >
             <Search className="h-5 w-5" />
           </button>
-          <Link
-            href={isAuthenticated ? "/account" : "/login"}
-            className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-border bg-white/70"
-            aria-label="Account"
-          >
-            <User className="h-5 w-5" />
-          </Link>
           <button
             type="button"
             className="relative inline-flex h-11 w-11 items-center justify-center rounded-full border border-border bg-white/70"
@@ -137,13 +130,6 @@ export function HeaderClient({ isAuthenticated }: { isAuthenticated: boolean }) 
                   {link.label}
                 </Link>
               ))}
-              <Link
-                href={isAuthenticated ? "/account" : "/login"}
-                className="block rounded-2xl border border-border bg-white/70 px-5 py-4 text-lg font-semibold text-ink"
-                onClick={() => setMobileOpen(false)}
-              >
-                {isAuthenticated ? "Account" : "Login"}
-              </Link>
             </nav>
           </div>
         </div>
