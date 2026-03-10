@@ -31,7 +31,7 @@ function getSecret() {
   return new TextEncoder().encode(secret);
 }
 
-export async function createSession(payload: SessionPayload) {
+export async createSession(payload: SessionPayload) {
   const token = await createToken(payload, "7d");
 
   const cookieStore = await cookies();
@@ -44,8 +44,8 @@ export async function createSession(payload: SessionPayload) {
   });
 }
 
-async function createToken<T extends Record<string, unknown>>(payload: T, expirationTime: string) {
-  return new SignJWT(payload)
+async function createToken(payload: object, expirationTime: string) {
+  return new SignJWT(payload as Record<string, unknown>)
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime(expirationTime)
