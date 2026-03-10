@@ -95,6 +95,8 @@ export function ProductDetailClient({
 
   const displayPrice = selectedVariation?.price || product.price || product.regular_price;
   const displayDescription = selectedVariation?.description || product.description;
+  const shortDescription = product.short_description?.trim();
+
 
 
   function addCurrentSelection() {
@@ -182,7 +184,7 @@ export function ProductDetailClient({
             </div>
           </div>
 
-          <RichText html={product.short_description || displayDescription} />
+          {shortDescription ? <RichText html={product.short_description} /> : null}
 
           {product.type !== "grouped" ? (
             <div className="space-y-5 rounded-[2rem] border border-border bg-white/80 p-5">
@@ -359,8 +361,7 @@ export function ProductDetailClient({
             </div>
           ) : (
             <div className="mt-6 space-y-3 text-sm leading-7 text-muted">
-              <p>Sign in to submit a verified review tied to your WooCommerce customer account.</p>
-              <ButtonLink href="/login">Sign in</ButtonLink>
+              <p>Verified purchase reviews are currently available for returning customers only.</p>
             </div>
           )}
         </div>

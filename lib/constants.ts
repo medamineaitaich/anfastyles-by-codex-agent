@@ -25,7 +25,6 @@ export const LEGAL_LINKS = [
 export const SUPPORT_LINKS = [
   { href: "/faq", label: "FAQ" },
   { href: "/contact", label: "Contact Us" },
-  { href: "/account", label: "My Account" },
 ] as const;
 
 export const ACCOUNT_NAV = [

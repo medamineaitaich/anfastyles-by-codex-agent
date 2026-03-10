@@ -1,3 +1,4 @@
+import Link from "next/link";
 import Image from "next/image";
 import { ShoppingBag } from "lucide-react";
 import { Button, ButtonLink } from "@/components/ui/button";
@@ -18,7 +19,12 @@ export function ProductCard({
   const canQuickAdd = product.type === "simple" || product.type === "variable";
 
   return (
-    <article className="group card-surface overflow-hidden rounded-[2rem]">
+    <article className="group relative card-surface overflow-hidden rounded-[2rem]">
+      <Link
+        href={`/shop/${product.slug}`}
+        className="absolute inset-0 z-10"
+        aria-label={`View ${product.name}`}
+      />
       <div className="relative aspect-[4/4.2] overflow-hidden bg-[#e8eef0]">
         {image ? (
           <Image
@@ -30,16 +36,14 @@ export function ProductCard({
           />
         ) : null}
       </div>
-      <div className="space-y-4 p-5">
+      <div className="relative z-20 space-y-4 p-5">
         <div className="space-y-2">
           <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted">
             {product.categories[0]?.name ?? "Collection"}
           </p>
           <div className="flex items-start justify-between gap-3">
             <div>
-              <h3 className="display-font text-2xl font-semibold text-ink">
-                <a href={`/shop/${product.slug}`}>{product.name}</a>
-              </h3>
+              <h3 className="display-font text-2xl font-semibold text-ink">{product.name}</h3>
               <p className="mt-1 max-w-[17rem] text-sm text-muted">
                 {stripHtml(product.short_description || product.description).slice(0, 88)}
               </p>
@@ -50,7 +54,14 @@ export function ProductCard({
           </div>
         </div>
         {action && canQuickAdd ? (
-          <Button className="w-full gap-2" onClick={action.onClick}>
+          <Button
+            className="w-full gap-2"
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              action.onClick();
+            }}
+          >
             <ShoppingBag className="h-4 w-4" />
             {action.label}
           </Button>
