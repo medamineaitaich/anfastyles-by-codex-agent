@@ -31,7 +31,7 @@ function getSecret() {
   return new TextEncoder().encode(secret);
 }
 
-export async createSession(payload: SessionPayload) {
+export async function createSession(payload: SessionPayload) {
   const token = await createToken(payload, "7d");
 
   const cookieStore = await cookies();
