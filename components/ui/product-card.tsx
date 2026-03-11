@@ -1,4 +1,6 @@
-import Link from "next/link";
+"use client";
+
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { ShoppingBag } from "lucide-react";
 import { Button, ButtonLink } from "@/components/ui/button";
@@ -15,16 +17,24 @@ export function ProductCard({
     onClick: () => void;
   };
 }) {
+  const router = useRouter();
   const image = product.images[0];
   const canQuickAdd = product.type === "simple" || product.type === "variable";
 
   return (
-    <article className="group relative card-surface overflow-hidden rounded-[2rem]">
-      <Link
-        href={`/shop/${product.slug}`}
-        className="absolute inset-0 z-10"
-        aria-label={`View ${product.name}`}
-      />
+    <article
+      className="group card-surface cursor-pointer overflow-hidden rounded-[2rem]"
+      onClick={() => router.push(`/shop/${product.slug}`)}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          router.push(`/shop/${product.slug}`);
+        }
+      }}
+      role="link"
+      tabIndex={0}
+      aria-label={`View ${product.name}`}
+    >
       <div className="relative aspect-[4/4.2] overflow-hidden bg-[#e8eef0]">
         {image ? (
           <Image
@@ -66,7 +76,14 @@ export function ProductCard({
             {action.label}
           </Button>
         ) : (
-          <ButtonLink href={`/shop/${product.slug}`} variant="secondary" className="w-full">
+          <ButtonLink
+            href={`/shop/${product.slug}`}
+            variant="secondary"
+            className="w-full"
+            onClick={(event) => {
+              event.stopPropagation();
+            }}
+          >
             {product.type === "grouped" ? "View collection" : "View product"}
           </ButtonLink>
         )}

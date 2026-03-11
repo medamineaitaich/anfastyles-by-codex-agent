@@ -40,6 +40,29 @@ function findMatchingVariation(variations: WooVariation[], attributes: Record<st
   );
 }
 
+function isVariationCombinationAvailable(
+  variations: WooVariation[],
+  attributes: Record<string, string>,
+) {
+  const normalized = normalizeAttributes(attributes);
+  return variations.some((variation) => {
+    if (!variation.purchasable || variation.stock_status === "outofstock") {
+      return false;
+    }
+
+    return variation.attributes.every((attribute) => {
+      const option = attribute.option?.toLowerCase();
+      if (!option) {
+        return true;
+      }
+
+      const selected =
+        normalized[attribute.name.toLowerCase()] ?? normalized[attribute.slug.toLowerCase()];
+      return !selected || selected === option;
+    });
+  });
+}
+
 export function ProductDetailClient({
   product,
   variations,
@@ -56,10 +79,21 @@ export function ProductDetailClient({
   isAuthenticated: boolean;
 }) {
   const { addItem } = useCart();
+  const preferredAttributes = Object.fromEntries(
+    (product.default_attributes?.length
+      ? product.default_attributes
+      : variations[0]?.attributes?.map((attribute) => ({
+          name: attribute.name,
+          option: attribute.option ?? "",
+        })) ?? []
+    )
+      .filter((attribute) => attribute.option)
+      .map((attribute) => [attribute.name, attribute.option]),
+  );
   const initialAttributes = Object.fromEntries(
     product.attributes
       .filter((attribute) => attribute.options?.length)
-      .map((attribute) => [attribute.name, attribute.options?.[0] ?? ""]),
+      .map((attribute) => [attribute.name, preferredAttributes[attribute.name] || attribute.options?.[0] || ""]),
   );
   const [selectedAttributes, setSelectedAttributes] =
     useState<Record<string, string>>(initialAttributes);
@@ -97,7 +131,10 @@ export function ProductDetailClient({
   const displayDescription = selectedVariation?.description || product.description;
   const shortDescription = product.short_description?.trim();
 
-
+  function isOptionAvailable(attributeName: string, option: string) {
+    const nextAttributes = { ...selectedAttributes, [attributeName]: option };
+    return isVariationCombinationAvailable(variations, nextAttributes);
+  }
 
   function addCurrentSelection() {
     if (product.type === "grouped" || product.type === "external") {
@@ -197,16 +234,20 @@ export function ProductDetailClient({
                     {(attribute.options ?? []).map((option) => {
                       const selected = selectedAttributes[attribute.name] === option;
                       const isColor = attribute.name.toLowerCase().includes("color");
+                      const available = isOptionAvailable(attribute.name, option);
                       return (
                         <button
                           key={option}
                           type="button"
+                          disabled={!available}
+                          aria-disabled={!available}
                           className={
                             isColor
-                              ? `group relative inline-flex h-11 w-11 items-center justify-center rounded-full border-2 ${selected ? "border-forest" : "border-white"}`
-                              : `rounded-full border px-4 py-2 text-sm font-semibold ${selected ? "border-forest bg-forest text-white" : "border-border bg-white text-ink"}`
+                              ? `group relative inline-flex h-11 w-11 items-center justify-center rounded-full border-2 ${selected ? "border-forest" : "border-white"} ${!available ? "cursor-not-allowed opacity-45" : ""}`
+                              : `rounded-full border px-4 py-2 text-sm font-semibold ${selected ? "border-forest bg-forest text-white" : "border-border bg-white text-ink"} ${!available ? "cursor-not-allowed opacity-45 line-through" : ""}`
                           }
                           onClick={() =>
+                            available &&
                             setSelectedAttributes((current) => {
                               const nextAttributes = { ...current, [attribute.name]: option };
                               const nextVariation = findMatchingVariation(variations, nextAttributes);
@@ -217,10 +258,15 @@ export function ProductDetailClient({
                           title={option}
                         >
                           {isColor ? (
-                            <span
-                              className="h-8 w-8 rounded-full border border-black/5"
-                              style={{ backgroundColor: resolveSwatch(option) }}
-                            />
+                            <span className="relative inline-flex h-8 w-8 items-center justify-center">
+                              <span
+                                className="h-8 w-8 rounded-full border border-black/5"
+                                style={{ backgroundColor: resolveSwatch(option) }}
+                              />
+                              {!available ? (
+                                <span className="pointer-events-none absolute text-base font-bold text-ink/75">✕</span>
+                              ) : null}
+                            </span>
                           ) : (
                             option
                           )}
@@ -258,7 +304,10 @@ export function ProductDetailClient({
             <div className="space-y-4 rounded-[2rem] border border-border bg-white/80 p-5">
               <h2 className="display-font text-3xl font-semibold text-ink">Included styles</h2>
               {groupedProducts.map((child) => (
-                <div key={child.id} className="flex items-center justify-between gap-4 rounded-[1.3rem] border border-border px-4 py-3">
+                <div
+                  key={child.id}
+                  className="flex items-center justify-between gap-4 rounded-[1.3rem] border border-border px-4 py-3"
+                >
                   <div>
                     <p className="font-semibold text-ink">{child.name}</p>
                     <p className="text-sm text-muted">{formatWooPrice(child.price || child.regular_price)}</p>

@@ -41,7 +41,7 @@ export function HeaderClient() {
           </Link>
         </div>
 
-        <nav className="hidden items-center gap-8 text-sm font-medium md:flex">
+        <nav className="hidden items-center gap-8 text-base font-semibold md:flex">
           {NAV_LINKS.map((link) => {
             const active = pathname === link.href || pathname.startsWith(`${link.href}/`);
             return (
