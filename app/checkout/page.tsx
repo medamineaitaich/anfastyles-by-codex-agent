@@ -6,5 +6,5 @@ export default async function CheckoutPage() {
   const session = await getSession();
   const customer = session ? await getCustomer(session.customerId) : null;
 
-  return <CheckoutPageClient customer={customer} isAuthenticated={Boolean(session)} />;
+  return <CheckoutPageClient customer={customer} />;
 }
