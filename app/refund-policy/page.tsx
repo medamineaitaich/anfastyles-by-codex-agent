@@ -1,3 +1,5 @@
+import { ButtonLink } from "@/components/ui/button";
+
 export default function RefundPolicyPage() {
   return (
     <section className="content-shell py-16">
@@ -6,6 +8,9 @@ export default function RefundPolicyPage() {
         <p className="mt-6 text-base leading-8 text-muted">
           Placeholder refund policy for local development. Replace with approved policy text before launch. The storefront messaging currently supports a 30-day refund position and customer-friendly issue resolution.
         </p>
+        <div className="mt-8">
+          <ButtonLink href="/contact?subject=refund">Request a refund</ButtonLink>
+        </div>
       </div>
     </section>
   );

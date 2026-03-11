@@ -42,7 +42,7 @@ export default function RootLayout({
             <div className="pointer-events-none absolute left-[-10rem] top-[18rem] -z-10 h-[22rem] w-[22rem] rounded-full bg-[radial-gradient(circle,_rgba(188,145,95,0.18),_transparent_70%)] blur-3xl" />
             <div className="pointer-events-none absolute right-[-10rem] top-[42rem] -z-10 h-[24rem] w-[24rem] rounded-full bg-[radial-gradient(circle,_rgba(89,125,77,0.16),_transparent_70%)] blur-3xl" />
             <SiteHeader sessionPromise={session} />
-            <main>{children}</main>
+            <main className="pt-20">{children}</main>
             <SiteFooter />
           </div>
         </CartProvider>

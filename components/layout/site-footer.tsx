@@ -46,7 +46,8 @@ export function SiteFooter() {
           <div>
             <h3 className="display-font text-xl font-semibold">Stay Connected</h3>
             <div className="mt-5 space-y-3 text-sm leading-7 text-white/80">
-              <p>{BRAND.email}</p>
+              <p>{BRAND.storeEmail}</p>
+              <p>{BRAND.companyEmail}</p>
               <p>{BRAND.phone}</p>
               <p>{BRAND.address}</p>
               <p className="font-semibold text-white">{BRAND.shippingNote}</p>
@@ -54,7 +55,17 @@ export function SiteFooter() {
           </div>
         </div>
         <div className="flex flex-col gap-3 pt-6 text-sm text-white/65 sm:flex-row sm:items-center sm:justify-between">
-          <p>{BRAND.company}</p>
+          <p>
+            Operated by{" "}
+            <a
+              href="https://medaitllc.com"
+              target="_blank"
+              rel="noreferrer"
+              className="font-semibold text-white hover:underline"
+            >
+              Medait LLC
+            </a>
+          </p>
           <p>© 2026 {BRAND.name}. All rights reserved.</p>
         </div>
       </div>

@@ -1,14 +1,30 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 
-export function ContactForm() {
+const SUBJECT_OPTIONS = ["General question", "Order support", "Refund request"] as const;
+
+export function ContactForm({ defaultSubject }: { defaultSubject?: string }) {
+  const initialSubject = useMemo(() => {
+    const normalized = defaultSubject?.trim().toLowerCase();
+    if (normalized === "refund" || normalized === "refund-request") {
+      return "Refund request";
+    }
+
+    const matched = SUBJECT_OPTIONS.find(
+      (option) => option.toLowerCase() === normalized,
+    );
+
+    return matched ?? "General question";
+  }, [defaultSubject]);
+
   const [form, setForm] = useState({
     firstName: "",
     email: "",
+    subject: initialSubject,
     orderNumber: "",
     message: "",
   });
@@ -30,7 +46,13 @@ export function ContactForm() {
     setStatus(payload.message ?? (response.ok ? "Message sent." : "Unable to send."));
 
     if (response.ok) {
-      setForm({ firstName: "", email: "", orderNumber: "", message: "" });
+      setForm({
+        firstName: "",
+        email: "",
+        subject: initialSubject,
+        orderNumber: "",
+        message: "",
+      });
     }
   }
 
@@ -51,6 +73,20 @@ export function ContactForm() {
             type="email"
             onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))}
           />
+        </label>
+        <label className="grid gap-2 text-sm font-semibold text-ink">
+          Subject
+          <select
+            value={form.subject}
+            className="h-12 rounded-2xl border border-border bg-white/80 px-4 text-sm outline-none"
+            onChange={(event) => setForm((current) => ({ ...current, subject: event.target.value }))}
+          >
+            {SUBJECT_OPTIONS.map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
         </label>
         <label className="grid gap-2 text-sm font-semibold text-ink">
           Order Number (Optional)

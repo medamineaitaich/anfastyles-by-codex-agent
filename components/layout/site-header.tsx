@@ -6,6 +6,6 @@ export async function SiteHeader({
 }: {
   sessionPromise: Promise<SessionPayload | null>;
 }) {
-  const session = await sessionPromise;
-  return <HeaderClient isAuthenticated={Boolean(session)} />;
+  await sessionPromise;
+  return <HeaderClient />;
 }
