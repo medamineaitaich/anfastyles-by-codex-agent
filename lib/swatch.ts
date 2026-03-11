@@ -49,3 +49,20 @@ export function resolveSwatch(name: string) {
   const fuzzy = COLOR_TOKENS.find((token) => normalized.includes(token));
   return fuzzy ? swatches[fuzzy] : NEUTRAL_SWATCH;
 }
+
+export function resolveSwatch(name: string) {
+  const normalized = normalizeSwatchLabel(name);
+
+  if (swatches[normalized]) {
+    return swatches[normalized];
+  }
+
+  const tokens = normalized.split(/[-/]/).filter(Boolean);
+  const exactToken = tokens.find((token) => swatches[token]);
+  if (exactToken) {
+    return swatches[exactToken];
+  }
+
+  const fuzzy = COLOR_TOKENS.find((token) => normalized.includes(token));
+  return fuzzy ? swatches[fuzzy] : NEUTRAL_SWATCH;
+}
