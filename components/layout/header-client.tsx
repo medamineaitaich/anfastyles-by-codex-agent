@@ -25,7 +25,7 @@ export function HeaderClient() {
   }
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border bg-sand/90 backdrop-blur">
+    <header className="fixed inset-x-0 top-0 z-50 border-b border-border bg-sand/95 backdrop-blur">
       <div className="content-shell flex h-20 items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <button

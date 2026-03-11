@@ -1,113 +1,103 @@
 import type { WooOrder } from "@/lib/woo/types";
 
-function escapeHtml(value: string) {
-  return value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#39;");
-}
-
 function formatMoney(value: string | number) {
   const amount = typeof value === "number" ? value : Number(value || 0);
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(amount);
 }
 
-function addressBlock(order: WooOrder, type: "billing" | "shipping") {
-  const address = order[type];
-  return [
-    `${address.first_name || ""} ${address.last_name || ""}`.trim(),
-    address.address_1,
-    address.address_2,
-    `${address.city || ""}${address.state ? `, ${address.state}` : ""} ${address.postcode || ""}`.trim(),
-    address.country,
-    type === "billing" ? address.email : "",
-    type === "billing" ? address.phone : "",
-  ]
-    .filter((line): line is string => Boolean(line))
-    .map((line) => `<div>${escapeHtml(line)}</div>`)
-    .join("");
+function sanitizePdfText(value: string) {
+  return value.replace(/\\/g, "\\\\").replace(/\(/g, "\\(").replace(/\)/g, "\\)");
 }
 
-export function buildInvoiceHtml(order: WooOrder) {
-  const subtotal = order.line_items.reduce((total, item) => total + Number(item.subtotal || item.total || 0), 0);
+function toInvoiceLines(order: WooOrder) {
+  const subtotal = order.line_items.reduce(
+    (total, item) => total + Number(item.subtotal || item.total || 0),
+    0,
+  );
   const shipping = Number(order.shipping_total || 0);
 
-  const itemRows = order.line_items
-    .map(
-      (item) => `
-      <tr>
-        <td>${escapeHtml(item.name)}</td>
-        <td style="text-align:center;">${item.quantity}</td>
-        <td style="text-align:right;">${formatMoney(item.price)}</td>
-        <td style="text-align:right;">${formatMoney(item.total)}</td>
-      </tr>`,
-    )
-    .join("");
+  const lines: string[] = [
+    `AnfaStyles Invoice`,
+    `Order #: ${order.number}`,
+    `Order date: ${new Date(order.date_created).toLocaleDateString("en-US")}`,
+    "",
+    "Billing details",
+    `${order.billing.first_name || ""} ${order.billing.last_name || ""}`.trim(),
+    order.billing.address_1 || "",
+    order.billing.address_2 || "",
+    `${order.billing.city || ""}, ${order.billing.state || ""} ${order.billing.postcode || ""}`.trim(),
+    order.billing.country || "",
+    order.billing.email || "",
+    order.billing.phone || "",
+    "",
+    "Shipping details",
+    `${order.shipping.first_name || ""} ${order.shipping.last_name || ""}`.trim(),
+    order.shipping.address_1 || "",
+    order.shipping.address_2 || "",
+    `${order.shipping.city || ""}, ${order.shipping.state || ""} ${order.shipping.postcode || ""}`.trim(),
+    order.shipping.country || "",
+    "",
+    "Items",
+    ...order.line_items.map(
+      (item) =>
+        `${item.name} | Qty ${item.quantity} | Unit ${formatMoney(item.price)} | Total ${formatMoney(item.total)}`,
+    ),
+    "",
+    `Subtotal: ${formatMoney(subtotal)}`,
+    `Shipping: ${formatMoney(shipping)}`,
+    `Total: ${formatMoney(order.total)}`,
+  ];
 
-  return `<!doctype html>
-<html>
-  <head>
-    <meta charset="utf-8" />
-    <title>Invoice #${escapeHtml(order.number)}</title>
-    <style>
-      body { font-family: Inter, Arial, sans-serif; color: #1f2937; margin: 32px; }
-      h1,h2,h3 { margin: 0; }
-      .top { display:flex; justify-content:space-between; gap: 24px; margin-bottom: 28px; }
-      .muted { color:#6b7280; font-size: 14px; }
-      .grid { display:grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 28px; }
-      table { width: 100%; border-collapse: collapse; margin-top: 12px; }
-      th, td { border-bottom: 1px solid #e5e7eb; padding: 10px 8px; font-size: 14px; }
-      th { text-transform: uppercase; letter-spacing: .08em; font-size: 12px; text-align:left; color:#6b7280; }
-      .totals { margin-top: 20px; margin-left: auto; width: 320px; }
-      .totals div { display:flex; justify-content:space-between; padding: 6px 0; }
-      .totals .total { font-weight:700; font-size:18px; border-top:1px solid #d1d5db; margin-top:6px; padding-top:10px; }
-    </style>
-  </head>
-  <body>
-    <section class="top">
-      <div>
-        <h1>AnfaStyles Invoice</h1>
-        <p class="muted">Order #${escapeHtml(order.number)}</p>
-      </div>
-      <div class="muted" style="text-align:right;">
-        <div>Invoice Date: ${escapeHtml(new Date(order.date_created).toLocaleDateString("en-US"))}</div>
-        <div>Status: ${escapeHtml(order.status)}</div>
-      </div>
-    </section>
+  return lines.filter((line) => line !== undefined);
+}
 
-    <section class="grid">
-      <div>
-        <h3>Billing Details</h3>
-        <div class="muted">${addressBlock(order, "billing")}</div>
-      </div>
-      <div>
-        <h3>Shipping Details</h3>
-        <div class="muted">${addressBlock(order, "shipping")}</div>
-      </div>
-    </section>
+function buildPdfTextStream(lines: string[]) {
+  const startY = 800;
+  const lineHeight = 16;
+  const textCommands = ["BT", "/F1 11 Tf", "50 0 0 50 40 0 Tm"];
 
-    <section>
-      <h3>Items</h3>
-      <table>
-        <thead>
-          <tr>
-            <th>Product</th>
-            <th style="text-align:center;">Qty</th>
-            <th style="text-align:right;">Price</th>
-            <th style="text-align:right;">Total</th>
-          </tr>
-        </thead>
-        <tbody>${itemRows}</tbody>
-      </table>
-    </section>
+  lines.forEach((line, index) => {
+    const y = startY - index * lineHeight;
+    if (y < 40) {
+      return;
+    }
 
-    <section class="totals">
-      <div><span>Subtotal</span><span>${formatMoney(subtotal)}</span></div>
-      <div><span>Shipping</span><span>${formatMoney(shipping)}</span></div>
-      <div class="total"><span>Total</span><span>${formatMoney(order.total)}</span></div>
-    </section>
-  </body>
-</html>`;
+    textCommands.push(`1 0 0 1 50 ${y} Tm (${sanitizePdfText(line)}) Tj`);
+  });
+
+  textCommands.push("ET");
+  return textCommands.join("\n");
+}
+
+export function buildInvoicePdf(order: WooOrder) {
+  const textStream = buildPdfTextStream(toInvoiceLines(order));
+  const streamLength = Buffer.byteLength(textStream, "utf8");
+
+  const objects = [
+    "1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n",
+    "2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n",
+    "3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 842] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>\nendobj\n",
+    "4 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\nendobj\n",
+    `5 0 obj\n<< /Length ${streamLength} >>\nstream\n${textStream}\nendstream\nendobj\n`,
+  ];
+
+  let pdf = "%PDF-1.4\n";
+  const offsets = [0];
+
+  objects.forEach((obj) => {
+    offsets.push(Buffer.byteLength(pdf, "utf8"));
+    pdf += obj;
+  });
+
+  const xrefPosition = Buffer.byteLength(pdf, "utf8");
+  pdf += `xref\n0 ${objects.length + 1}\n`;
+  pdf += "0000000000 65535 f \n";
+
+  for (let index = 1; index <= objects.length; index += 1) {
+    pdf += `${String(offsets[index]).padStart(10, "0")} 00000 n \n`;
+  }
+
+  pdf += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xrefPosition}\n%%EOF`;
+
+  return Buffer.from(pdf, "utf8");
 }

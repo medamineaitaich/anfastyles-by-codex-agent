@@ -3,7 +3,7 @@ import { SectionHeading } from "@/components/ui/section-heading";
 export default function AboutPage() {
   return (
     <section className="content-shell py-16">
-      <div className="max-w-4xl space-y-10">
+      <div className="mx-auto max-w-4xl space-y-10">
         <SectionHeading
           align="center"
           eyebrow="About AnfaStyles"

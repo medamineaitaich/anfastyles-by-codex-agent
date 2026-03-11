@@ -136,6 +136,7 @@ export function ProductDetailClient({
     return isVariationCombinationAvailable(variations, nextAttributes);
   }
 
+
   function addCurrentSelection() {
     if (product.type === "grouped" || product.type === "external") {
       return;

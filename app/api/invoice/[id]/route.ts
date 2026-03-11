@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/session";
 import { getOrderById } from "@/lib/woo/client";
-import { buildInvoiceHtml } from "@/lib/invoice";
+import { buildInvoicePdf } from "@/lib/invoice";
 
 export async function GET(
   request: Request,
@@ -29,10 +29,10 @@ export async function GET(
     return NextResponse.json({ message: "Invoice access denied." }, { status: 403 });
   }
 
-  return new NextResponse(buildInvoiceHtml(order), {
+  return new NextResponse(buildInvoicePdf(order), {
     headers: {
-      "Content-Type": "text/html; charset=utf-8",
-      "Content-Disposition": `attachment; filename="anfastyles-invoice-${order.number}.html"`,
+      "Content-Type": "application/pdf",
+      "Content-Disposition": `attachment; filename="anfastyles-invoice-${order.number}.pdf"`,
     },
   });
 }
