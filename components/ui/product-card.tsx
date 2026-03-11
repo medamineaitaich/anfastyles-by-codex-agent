@@ -46,7 +46,7 @@ export function ProductCard({
           />
         ) : null}
       </div>
-      <div className="space-y-4 p-5">
+      <div className="relative z-20 space-y-4 p-5">
         <div className="space-y-2">
           <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted">
             {product.categories[0]?.name ?? "Collection"}
