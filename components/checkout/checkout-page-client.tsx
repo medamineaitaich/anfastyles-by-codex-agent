@@ -1,32 +1,42 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { PAYMENT_OPTIONS } from "@/lib/constants";
 import type { WooCustomer } from "@/lib/woo/types";
-import { Button } from "@/components/ui/button";
+import { Button, ButtonLink } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { formatPriceFromCents } from "@/lib/utils";
 import { useCart } from "@/providers/cart-provider";
 
+type FieldErrors = Partial<Record<keyof CheckoutBilling, string>>;
+
+type CheckoutBilling = {
+  full_name: string;
+  email: string;
+  phone: string;
+  address_1: string;
+  address_2: string;
+  city: string;
+  state: string;
+  postcode: string;
+  country: string;
+};
+
 export function CheckoutPageClient({
   customer,
-  isAuthenticated,
 }: {
   customer?: WooCustomer | null;
-  isAuthenticated: boolean;
 }) {
-  const router = useRouter();
   const { items, subtotalCents, shippingCents, totalCents, clearCart } = useCart();
   const [paymentMethod, setPaymentMethod] = useState<"cod" | "manual">("cod");
   const [message, setMessage] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [success, setSuccess] = useState<{ orderId: number; orderNumber: string } | null>(null);
   const [form, setForm] = useState({
     billing: {
-      first_name: customer?.first_name ?? "",
-      last_name: customer?.last_name ?? "",
+      full_name: [customer?.first_name, customer?.last_name].filter(Boolean).join(" "),
       email: customer?.email ?? "",
       phone: customer?.billing.phone ?? "",
       address_1: customer?.billing.address_1 ?? "",
@@ -36,24 +46,54 @@ export function CheckoutPageClient({
       postcode: customer?.billing.postcode ?? "",
       country: customer?.billing.country || "US",
     },
-    shipping: {
-      first_name: customer?.shipping.first_name || customer?.first_name || "",
-      last_name: customer?.shipping.last_name || customer?.last_name || "",
-      address_1: customer?.shipping.address_1 || customer?.billing.address_1 || "",
-      address_2: customer?.shipping.address_2 || customer?.billing.address_2 || "",
-      city: customer?.shipping.city || customer?.billing.city || "",
-      state: customer?.shipping.state || customer?.billing.state || "",
-      postcode: customer?.shipping.postcode || customer?.billing.postcode || "",
-      country: customer?.shipping.country || customer?.billing.country || "US",
-    },
     customerNote: "",
   });
 
   const disabled = useMemo(() => !items.length || pending, [items.length, pending]);
 
+  function validateBillingFields() {
+    const nextErrors: FieldErrors = {};
+
+    if (!form.billing.full_name.trim()) {
+      nextErrors.full_name = "Please enter your full name.";
+    }
+
+    if (!form.billing.email.trim()) {
+      nextErrors.email = "Please enter your email address.";
+    }
+
+    if (!form.billing.address_1.trim()) {
+      nextErrors.address_1 = "Please enter your address.";
+    }
+
+    if (!form.billing.address_2.trim()) {
+      nextErrors.address_2 = "Please enter your apartment, suite, or unit.";
+    }
+
+    if (!form.billing.city.trim()) {
+      nextErrors.city = "Please enter your city.";
+    }
+
+    if (!form.billing.state.trim()) {
+      nextErrors.state = "Please select your state.";
+    }
+
+    if (!form.billing.country.trim()) {
+      nextErrors.country = "Please select your country.";
+    }
+
+    setFieldErrors(nextErrors);
+    return Object.keys(nextErrors).length === 0;
+  }
+
   async function submit() {
-    setPending(true);
     setMessage(null);
+    if (!validateBillingFields()) {
+      setMessage("Please correct the highlighted checkout fields.");
+      return;
+    }
+
+    setPending(true);
 
     const response = await fetch("/api/checkout", {
       method: "POST",
@@ -69,25 +109,26 @@ export function CheckoutPageClient({
       message?: string;
       orderId?: number;
       orderNumber?: string;
+      fieldErrors?: Record<string, string>;
     };
 
     setPending(false);
 
     if (!response.ok || !payload.orderId || !payload.orderNumber) {
+      const apiFieldErrors = Object.fromEntries(
+        Object.entries(payload.fieldErrors ?? {}).map(([path, value]) => [path.replace("billing.", ""), value]),
+      );
+
+      setFieldErrors((current) => ({ ...current, ...apiFieldErrors }));
       setMessage(payload.message ?? "Unable to place the order.");
       return;
     }
 
     clearCart();
     setSuccess({ orderId: payload.orderId, orderNumber: payload.orderNumber });
-
-    if (isAuthenticated) {
-      router.push(`/account/orders/${payload.orderId}?placed=1`);
-      router.refresh();
-    }
   }
 
-  if (success && !isAuthenticated) {
+  if (success) {
     return (
       <section className="content-shell py-16">
         <div className="card-surface mx-auto max-w-3xl p-10 text-center">
@@ -100,6 +141,16 @@ export function CheckoutPageClient({
           <p className="mt-4 text-base leading-7 text-muted">
             Your order number is #{success.orderNumber}. Keep it for future tracking and support.
           </p>
+          <div className="mt-8 flex flex-wrap justify-center gap-3">
+            <ButtonLink
+              href={`/api/invoice/${success.orderId}?email=${encodeURIComponent(form.billing.email)}`}
+            >
+              Download invoice
+            </ButtonLink>
+            <ButtonLink href="/shop" variant="secondary">
+              Continue shopping
+            </ButtonLink>
+          </div>
         </div>
       </section>
     );
@@ -117,39 +168,31 @@ export function CheckoutPageClient({
         </p>
       </div>
 
-      <div className="grid gap-8 lg:grid-cols-[1.2fr_0.8fr]">
+      <div className="grid gap-8 lg:grid-cols-[1.2fr_0.8fr] lg:items-start">
         <div className="space-y-8">
           <div className="card-surface p-6">
             <h2 className="display-font text-3xl font-semibold text-ink">Billing details</h2>
             <div className="mt-6 grid gap-5 sm:grid-cols-2">
-              <label className="grid gap-2 text-sm font-semibold text-ink">
-                First Name
+              <label className="grid gap-2 text-sm font-semibold text-ink sm:col-span-2">
+                Full Name *
                 <Input
-                  value={form.billing.first_name}
+                  value={form.billing.full_name}
+                  className={fieldErrors.full_name ? "border-[#b55245]" : ""}
                   onChange={(event) =>
                     setForm((current) => ({
                       ...current,
-                      billing: { ...current.billing, first_name: event.target.value },
+                      billing: { ...current.billing, full_name: event.target.value },
                     }))
                   }
                 />
+                {fieldErrors.full_name ? <span className="text-xs text-[#b55245]">{fieldErrors.full_name}</span> : null}
               </label>
-              <label className="grid gap-2 text-sm font-semibold text-ink">
-                Last Name
-                <Input
-                  value={form.billing.last_name}
-                  onChange={(event) =>
-                    setForm((current) => ({
-                      ...current,
-                      billing: { ...current.billing, last_name: event.target.value },
-                    }))
-                  }
-                />
-              </label>
-              <label className="grid gap-2 text-sm font-semibold text-ink">
-                Email
+              <label className="grid gap-2 text-sm font-semibold text-ink sm:col-span-2">
+                Email *
                 <Input
                   value={form.billing.email}
+                  type="email"
+                  className={fieldErrors.email ? "border-[#b55245]" : ""}
                   onChange={(event) =>
                     setForm((current) => ({
                       ...current,
@@ -157,9 +200,10 @@ export function CheckoutPageClient({
                     }))
                   }
                 />
+                {fieldErrors.email ? <span className="text-xs text-[#b55245]">{fieldErrors.email}</span> : null}
               </label>
-              <label className="grid gap-2 text-sm font-semibold text-ink">
-                Phone
+              <label className="grid gap-2 text-sm font-semibold text-ink sm:col-span-2">
+                Phone (Optional)
                 <Input
                   value={form.billing.phone}
                   onChange={(event) =>
@@ -171,9 +215,10 @@ export function CheckoutPageClient({
                 />
               </label>
               <label className="grid gap-2 text-sm font-semibold text-ink sm:col-span-2">
-                Address
+                Address *
                 <Input
                   value={form.billing.address_1}
+                  className={fieldErrors.address_1 ? "border-[#b55245]" : ""}
                   onChange={(event) =>
                     setForm((current) => ({
                       ...current,
@@ -181,11 +226,13 @@ export function CheckoutPageClient({
                     }))
                   }
                 />
+                {fieldErrors.address_1 ? <span className="text-xs text-[#b55245]">{fieldErrors.address_1}</span> : null}
               </label>
               <label className="grid gap-2 text-sm font-semibold text-ink sm:col-span-2">
-                Apartment
+                Apartment / Suite / Unit *
                 <Input
                   value={form.billing.address_2}
+                  className={fieldErrors.address_2 ? "border-[#b55245]" : ""}
                   onChange={(event) =>
                     setForm((current) => ({
                       ...current,
@@ -193,23 +240,27 @@ export function CheckoutPageClient({
                     }))
                   }
                 />
+                {fieldErrors.address_2 ? <span className="text-xs text-[#b55245]">{fieldErrors.address_2}</span> : null}
               </label>
               <label className="grid gap-2 text-sm font-semibold text-ink">
-                City
+                Country *
                 <Input
-                  value={form.billing.city}
+                  value={form.billing.country}
+                  className={fieldErrors.country ? "border-[#b55245]" : ""}
                   onChange={(event) =>
                     setForm((current) => ({
                       ...current,
-                      billing: { ...current.billing, city: event.target.value },
+                      billing: { ...current.billing, country: event.target.value },
                     }))
                   }
                 />
+                {fieldErrors.country ? <span className="text-xs text-[#b55245]">{fieldErrors.country}</span> : null}
               </label>
               <label className="grid gap-2 text-sm font-semibold text-ink">
-                State
+                State *
                 <Input
                   value={form.billing.state}
+                  className={fieldErrors.state ? "border-[#b55245]" : ""}
                   onChange={(event) =>
                     setForm((current) => ({
                       ...current,
@@ -217,9 +268,24 @@ export function CheckoutPageClient({
                     }))
                   }
                 />
+                {fieldErrors.state ? <span className="text-xs text-[#b55245]">{fieldErrors.state}</span> : null}
               </label>
               <label className="grid gap-2 text-sm font-semibold text-ink">
-                Postcode
+                City *
+                <Input
+                  value={form.billing.city}
+                  className={fieldErrors.city ? "border-[#b55245]" : ""}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      billing: { ...current.billing, city: event.target.value },
+                    }))
+                  }
+                />
+                {fieldErrors.city ? <span className="text-xs text-[#b55245]">{fieldErrors.city}</span> : null}
+              </label>
+              <label className="grid gap-2 text-sm font-semibold text-ink">
+                Postal Code / ZIP (Optional)
                 <Input
                   value={form.billing.postcode}
                   onChange={(event) =>
@@ -230,47 +296,6 @@ export function CheckoutPageClient({
                   }
                 />
               </label>
-              <label className="grid gap-2 text-sm font-semibold text-ink">
-                Country
-                <Input
-                  value={form.billing.country}
-                  onChange={(event) =>
-                    setForm((current) => ({
-                      ...current,
-                      billing: { ...current.billing, country: event.target.value },
-                    }))
-                  }
-                />
-              </label>
-            </div>
-          </div>
-
-          <div className="card-surface p-6">
-            <h2 className="display-font text-3xl font-semibold text-ink">Shipping details</h2>
-            <div className="mt-6 grid gap-5 sm:grid-cols-2">
-              {[
-                ["First Name", "first_name"],
-                ["Last Name", "last_name"],
-                ["Address", "address_1"],
-                ["Apartment", "address_2"],
-                ["City", "city"],
-                ["State", "state"],
-                ["Postcode", "postcode"],
-                ["Country", "country"],
-              ].map(([label, key]) => (
-                <label key={key} className="grid gap-2 text-sm font-semibold text-ink">
-                  {label}
-                  <Input
-                    value={form.shipping[key as keyof typeof form.shipping]}
-                    onChange={(event) =>
-                      setForm((current) => ({
-                        ...current,
-                        shipping: { ...current.shipping, [key]: event.target.value },
-                      }))
-                    }
-                  />
-                </label>
-              ))}
             </div>
           </div>
 
@@ -308,7 +333,7 @@ export function CheckoutPageClient({
           </div>
         </div>
 
-        <aside className="card-surface h-fit p-6">
+        <aside className="card-surface h-fit p-6 lg:sticky lg:top-24">
           <h2 className="display-font text-3xl font-semibold text-ink">Order summary</h2>
           <div className="mt-6 space-y-4">
             {items.map((item) => (

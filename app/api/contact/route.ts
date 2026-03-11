@@ -4,6 +4,7 @@ import { z } from "zod";
 const contactSchema = z.object({
   firstName: z.string().min(1),
   email: z.email(),
+  subject: z.enum(["General question", "Order support", "Refund request"]),
   orderNumber: z.string().optional(),
   message: z.string().min(12),
 });

@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { ButtonLink } from "@/components/ui/button";
 import { getSession } from "@/lib/session";
 import { getOrderById } from "@/lib/woo/client";
 import { formatDate, formatWooPrice } from "@/lib/utils";
@@ -30,6 +31,11 @@ export default async function OrderDetailPage({ params }: OrderDetailProps) {
           {order.status.replace(/-/g, " ")}
         </h1>
         <p className="mt-3 text-sm text-muted">{formatDate(order.date_created)}</p>
+        <div className="mt-5">
+          <ButtonLink href={`/api/invoice/${order.id}`} variant="secondary">
+            Download invoice
+          </ButtonLink>
+        </div>
       </article>
       <article className="card-surface p-6">
         <h2 className="display-font text-3xl font-semibold text-ink">Items</h2>
