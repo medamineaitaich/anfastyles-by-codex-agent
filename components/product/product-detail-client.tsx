@@ -305,7 +305,10 @@ export function ProductDetailClient({
             <div className="space-y-4 rounded-[2rem] border border-border bg-white/80 p-5">
               <h2 className="display-font text-3xl font-semibold text-ink">Included styles</h2>
               {groupedProducts.map((child) => (
-                <div key={child.id} className="flex items-center justify-between gap-4 rounded-[1.3rem] border border-border px-4 py-3">
+                <div
+                  key={child.id}
+                  className="flex items-center justify-between gap-4 rounded-[1.3rem] border border-border px-4 py-3"
+                >
                   <div>
                     <p className="font-semibold text-ink">{child.name}</p>
                     <p className="text-sm text-muted">{formatWooPrice(child.price || child.regular_price)}</p>
