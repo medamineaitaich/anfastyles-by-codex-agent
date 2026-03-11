@@ -5,7 +5,7 @@ import Image from "next/image";
 import { ShoppingBag } from "lucide-react";
 import { Button, ButtonLink } from "@/components/ui/button";
 import type { WooProduct } from "@/lib/woo/types";
-import { formatWooPrice, stripHtml } from "@/lib/utils";
+import { formatWooPrice } from "@/lib/utils";
 
 export function ProductCard({
   product,
@@ -46,22 +46,12 @@ export function ProductCard({
           />
         ) : null}
       </div>
-      <div className="relative z-20 space-y-4 p-5">
-        <div className="space-y-2">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted">
-            {product.categories[0]?.name ?? "Collection"}
+      <div className="space-y-4 p-5">
+        <div className="flex items-start justify-between gap-3">
+          <h3 className="display-font text-2xl font-semibold text-ink">{product.name}</h3>
+          <p className="text-base font-semibold text-forest">
+            {formatWooPrice(product.price || product.regular_price || 0)}
           </p>
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <h3 className="display-font text-2xl font-semibold text-ink">{product.name}</h3>
-              <p className="mt-1 max-w-[17rem] text-sm text-muted">
-                {stripHtml(product.short_description || product.description).slice(0, 88)}
-              </p>
-            </div>
-            <p className="text-base font-semibold text-forest">
-              {formatWooPrice(product.price || product.regular_price || 0)}
-            </p>
-          </div>
         </div>
         {action && canQuickAdd ? (
           <Button
