@@ -16,20 +16,21 @@ export default async function HomePage() {
   return (
     <div className="space-y-20 pb-8">
       <section className="content-shell pt-10">
-        <div className="hero-panel leaf-grid overflow-hidden rounded-[2.5rem] px-6 py-14 text-white sm:px-10 lg:px-16 lg:py-20">
-          <div className="max-w-3xl">
-            <p className="text-xs font-semibold uppercase tracking-[0.35em] text-white/70">
+        <div className="hero-panel leaf-grid relative overflow-hidden rounded-[2.5rem] px-6 py-14 text-white sm:px-10 lg:px-16 lg:py-20">
+          <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(110deg,rgba(12,28,10,0.56),rgba(20,43,18,0.32)_55%,rgba(20,43,18,0.2))]" />
+          <div className="relative max-w-3xl">
+            <p className="text-xs font-semibold uppercase tracking-[0.35em] text-white/85">
               Sustainable lifestyle apparel
             </p>
             <h1 className="display-font mt-6 max-w-4xl text-5xl font-semibold leading-tight sm:text-6xl lg:text-7xl">
               Rooted in Nature. Designed for You.
             </h1>
-            <p className="mt-6 max-w-2xl text-lg leading-8 text-white/82">
+            <p className="mt-6 max-w-2xl text-lg leading-8 text-white/92">
               Premium, zero-waste apparel for composting, permaculture, and sustainability communities. Wear your values with calm confidence.
             </p>
             <div className="mt-10 flex flex-col gap-4 sm:flex-row">
               <ButtonLink href="/shop">Shop Collection</ButtonLink>
-              <ButtonLink href="/about" variant="secondary" className="border-white/30 bg-white/10 text-white hover:bg-white/16">
+              <ButtonLink href="/about" variant="secondary" className="border-white/60 bg-white/18 text-white hover:bg-white/26">
                 Learn More
               </ButtonLink>
             </div>

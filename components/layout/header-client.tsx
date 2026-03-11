@@ -106,8 +106,8 @@ export function HeaderClient() {
       ) : null}
 
       {mobileOpen ? (
-        <div className="fixed inset-0 z-50 bg-ink/40 md:hidden">
-          <div className="ml-auto flex h-full w-full max-w-sm flex-col bg-sand p-5">
+        <div className="fixed inset-0 z-50 bg-ink/70 backdrop-blur-sm md:hidden">
+          <div className="ml-auto flex h-full w-full max-w-sm flex-col bg-sand p-5 shadow-2xl shadow-black/25">
             <div className="flex items-center justify-between">
               <span className="display-font text-2xl font-semibold text-forest">Menu</span>
               <button
@@ -124,7 +124,7 @@ export function HeaderClient() {
                 <Link
                   key={link.href}
                   href={link.href}
-                  className="block rounded-2xl border border-border bg-white/70 px-5 py-4 text-lg font-semibold text-ink"
+                  className="block rounded-2xl border border-border bg-white px-5 py-4 text-lg font-semibold text-ink"
                   onClick={() => setMobileOpen(false)}
                 >
                   {link.label}

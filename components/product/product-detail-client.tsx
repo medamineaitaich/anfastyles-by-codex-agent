@@ -178,7 +178,23 @@ export function ProductDetailClient({
 
   return (
     <section className="content-shell py-16">
-      <div className="grid gap-12 lg:grid-cols-[1.05fr_0.95fr]">
+      <div className="mx-auto max-w-5xl space-y-8">
+        <div className="space-y-4">
+          <h1 className="display-font text-4xl font-semibold tracking-tight text-ink sm:text-5xl">
+            {product.name}
+          </h1>
+          <p className="text-xs font-semibold uppercase tracking-[0.26em] text-forest/70">
+            {product.categories[0]?.name ?? "Collection"}
+          </p>
+          <p className="text-3xl font-semibold text-forest">{formatWooPrice(displayPrice || 0)}</p>
+          <div className="flex items-center gap-3">
+            <RatingStars rating={Number(product.average_rating || 0)} />
+            <span className="text-sm text-muted">
+              {reviews.length ? `${reviews.length} review${reviews.length === 1 ? "" : "s"}` : "No reviews yet"}
+            </span>
+          </div>
+        </div>
+
         <div>
           <div className="relative aspect-square overflow-hidden rounded-[2rem] bg-[#dde8ea]">
             {gallery[0] ? (
@@ -206,22 +222,6 @@ export function ProductDetailClient({
         </div>
 
         <div className="space-y-8">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.26em] text-forest/70">
-              {product.categories[0]?.name ?? "Collection"}
-            </p>
-            <h1 className="display-font mt-3 text-5xl font-semibold tracking-tight text-ink sm:text-6xl">
-              {product.name}
-            </h1>
-            <p className="mt-4 text-3xl font-semibold text-forest">{formatWooPrice(displayPrice || 0)}</p>
-            <div className="mt-4 flex items-center gap-3">
-              <RatingStars rating={Number(product.average_rating || 0)} />
-              <span className="text-sm text-muted">
-                {reviews.length ? `${reviews.length} review${reviews.length === 1 ? "" : "s"}` : "No reviews yet"}
-              </span>
-            </div>
-          </div>
-
           {shortDescription ? <RichText html={product.short_description} /> : null}
 
           {product.type !== "grouped" ? (
