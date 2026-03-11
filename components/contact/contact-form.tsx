@@ -79,7 +79,12 @@ export function ContactForm({ defaultSubject }: { defaultSubject?: string }) {
           <select
             value={form.subject}
             className="h-12 rounded-2xl border border-border bg-white/80 px-4 text-sm outline-none"
-            onChange={(event) => setForm((current) => ({ ...current, subject: event.target.value }))}
+            onChange={(event) =>
+              setForm((current) =>({
+                ...current,
+                subject: event.target.value as "General question" | "Order support" | "Refund request",
+              }))
+            }
           >
             {SUBJECT_OPTIONS.map((option) => (
               <option key={option} value={option}>
