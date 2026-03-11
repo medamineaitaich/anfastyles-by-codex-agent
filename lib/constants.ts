@@ -1,6 +1,8 @@
 export const BRAND = {
   name: "AnfaStyles",
   company: "MEDAIT LLC",
+  storeEmail: "contact@anfastyles.shop",
+  companyEmail: "contact@medaitllc.com",
   email: "contact@medaitllc.com",
   phone: "+1 202-773-7432",
   address: "1209 Mountain Road Place Northeast STE R, Albuquerque, NM 87110",
@@ -25,7 +27,7 @@ export const LEGAL_LINKS = [
 export const SUPPORT_LINKS = [
   { href: "/faq", label: "FAQ" },
   { href: "/contact", label: "Contact Us" },
-  { href: "/account", label: "My Account" },
+  { href: "/refund-policy", label: "Refund" },
 ] as const;
 
 export const ACCOUNT_NAV = [

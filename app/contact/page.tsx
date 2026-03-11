@@ -1,7 +1,13 @@
 import { ContactForm } from "@/components/contact/contact-form";
 import { BRAND } from "@/lib/constants";
 
-export default function ContactPage() {
+type ContactPageProps = {
+  searchParams: Promise<{ subject?: string }>;
+};
+
+export default async function ContactPage({ searchParams }: ContactPageProps) {
+  const params = await searchParams;
+
   return (
     <section className="content-shell py-16">
       <div className="mx-auto max-w-4xl text-center">
@@ -14,12 +20,15 @@ export default function ContactPage() {
         </p>
       </div>
       <div className="mt-12">
-        <ContactForm />
+        <ContactForm defaultSubject={params.subject} />
       </div>
       <div className="mt-12 text-center">
         <h2 className="display-font text-3xl font-semibold text-ink">Direct Response</h2>
         <p className="mt-4 text-base text-muted">
-          Email: <span className="font-semibold text-forest">{BRAND.email}</span>
+          Store email: <span className="font-semibold text-forest">{BRAND.storeEmail}</span>
+        </p>
+        <p className="mt-2 text-base text-muted">
+          Company email: <span className="font-semibold text-forest">{BRAND.companyEmail}</span>
         </p>
       </div>
     </section>
