@@ -14,6 +14,25 @@ type ContactFormState = {
   orderNumber: string;
   message: string;
 };
+type ContactFormErrors = Partial<Record<keyof ContactFormState, string>>;
+
+function validateForm(form: ContactFormState) {
+  const errors: ContactFormErrors = {};
+
+  if (!form.firstName.trim()) {
+    errors.firstName = "Enter your first name.";
+  }
+
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
+    errors.email = "Enter a valid email address.";
+  }
+
+  if (form.message.trim().length < 12) {
+    errors.message = "Message must be at least 12 characters.";
+  }
+
+  return errors;
+}
 
 export function ContactForm({ defaultSubject }: { defaultSubject?: string }) {
   const initialSubject = useMemo(() => {
@@ -36,12 +55,21 @@ export function ContactForm({ defaultSubject }: { defaultSubject?: string }) {
     orderNumber: "",
     message: "",
   });
+  const [errors, setErrors] = useState<ContactFormErrors>({});
   const [status, setStatus] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
   async function submit() {
+    const nextErrors = validateForm(form);
+    if (Object.keys(nextErrors).length > 0) {
+      setErrors(nextErrors);
+      setStatus("Please correct the highlighted fields.");
+      return;
+    }
+
     setPending(true);
     setStatus(null);
+    setErrors({});
 
     const response = await fetch("/api/contact", {
       method: "POST",
@@ -61,6 +89,7 @@ export function ContactForm({ defaultSubject }: { defaultSubject?: string }) {
         orderNumber: "",
         message: "",
       });
+      setErrors({});
     }
   }
 
@@ -71,16 +100,30 @@ export function ContactForm({ defaultSubject }: { defaultSubject?: string }) {
           First Name
           <Input
             value={form.firstName}
-            onChange={(event) => setForm((current) => ({ ...current, firstName: event.target.value }))}
+            required
+            aria-invalid={Boolean(errors.firstName)}
+            onChange={(event) => {
+              const firstName = event.target.value;
+              setForm((current) => ({ ...current, firstName }));
+              setErrors((current) => ({ ...current, firstName: undefined }));
+            }}
           />
+          {errors.firstName ? <p className="text-xs font-medium text-red-700">{errors.firstName}</p> : null}
         </label>
         <label className="grid gap-2 text-sm font-semibold text-ink">
           Email Address
           <Input
             value={form.email}
             type="email"
-            onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))}
+            required
+            aria-invalid={Boolean(errors.email)}
+            onChange={(event) => {
+              const email = event.target.value;
+              setForm((current) => ({ ...current, email }));
+              setErrors((current) => ({ ...current, email: undefined }));
+            }}
           />
+          {errors.email ? <p className="text-xs font-medium text-red-700">{errors.email}</p> : null}
         </label>
         <label className="grid gap-2 text-sm font-semibold text-ink">
           Subject
@@ -113,9 +156,17 @@ export function ContactForm({ defaultSubject }: { defaultSubject?: string }) {
           Message
           <Textarea
             value={form.message}
-            onChange={(event) => setForm((current) => ({ ...current, message: event.target.value }))}
+            required
+            minLength={12}
+            aria-invalid={Boolean(errors.message)}
+            onChange={(event) => {
+              const message = event.target.value;
+              setForm((current) => ({ ...current, message }));
+              setErrors((current) => ({ ...current, message: undefined }));
+            }}
             placeholder="How can we help?"
           />
+          {errors.message ? <p className="text-xs font-medium text-red-700">{errors.message}</p> : null}
         </label>
         <Button type="button" className="w-full" disabled={pending} onClick={submit}>
           {pending ? "Sending..." : "Send Message"}
