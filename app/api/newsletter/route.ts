@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { z } from "zod";
+import { z, ZodError } from "zod";
 
 const newsletterSchema = z.object({
-  email: z.email(),
+  email: z.string().trim().email("Please enter a valid email address."),
 });
 
 export async function POST(request: Request) {
@@ -14,6 +14,13 @@ export async function POST(request: Request) {
       message: "Thanks for joining the Soil Community.",
     });
   } catch (error) {
+    if (error instanceof ZodError) {
+      return NextResponse.json(
+        { message: error.issues[0]?.message ?? "Please enter a valid email address." },
+        { status: 400 },
+      );
+    }
+
     const message = error instanceof Error ? error.message : "Unable to save your email.";
     return NextResponse.json({ message }, { status: 400 });
   }

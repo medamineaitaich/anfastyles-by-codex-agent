@@ -30,15 +30,7 @@ export default async function HomePage() {
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(0,0,0,0.12),rgba(0,0,0,0.36))]" />
 
           <div className="content-shell relative z-10 flex w-full items-center justify-center px-6 py-24 text-center sm:px-10 lg:py-28">
-            <div className="max-w-3xl rounded-[2rem] bg-black/10 px-6 py-8 backdrop-blur-[2px] sm:px-10 sm:py-10">
-              <Image
-                src="/branding/anfastyles-logo.webp"
-                alt="AnfaStyles"
-                width={1100}
-                height={367}
-                priority
-                className="mx-auto mb-6 h-auto w-full max-w-[20rem] rounded-2xl bg-white/92 p-3 shadow-[0_18px_50px_rgba(0,0,0,0.2)] sm:mb-8 sm:max-w-[24rem]"
-              />
+            <div className="max-w-3xl px-6 py-8 sm:px-10 sm:py-10">
               <h1 className="display-font text-4xl font-semibold leading-tight text-white drop-shadow-[0_6px_24px_rgba(0,0,0,0.45)] sm:text-5xl lg:text-7xl">
                 Wear What You Believe In
               </h1>
@@ -73,6 +65,24 @@ export default async function HomePage() {
             );
           })}
         </div>
+      </section>
+
+      <section className="content-shell space-y-8">
+        <SectionHeading
+          eyebrow="Fresh Drops"
+          title="New arrivals with a softer footprint"
+          description="Current products are demo-friendly, but the storefront is built to scale for premium seasonal drops and evergreen essentials."
+        />
+        <ProductGrid products={latestProducts.slice(0, 4)} />
+      </section>
+
+      <section className="content-shell space-y-8">
+        <SectionHeading
+          eyebrow="Featured"
+          title="Latest Harvest"
+          description="A curated mix of best-known pieces and recent additions from the WooCommerce catalog."
+        />
+        <ProductGrid products={(featuredProducts as Awaited<typeof featuredProducts>).slice(0, 8)} />
       </section>
 
       <section className="content-shell">
@@ -110,24 +120,6 @@ export default async function HomePage() {
             ))}
           </div>
         </div>
-      </section>
-
-      <section className="content-shell space-y-8">
-        <SectionHeading
-          eyebrow="Featured"
-          title="Latest Harvest"
-          description="A curated mix of best-known pieces and recent additions from the WooCommerce catalog."
-        />
-        <ProductGrid products={(featuredProducts as Awaited<typeof featuredProducts>).slice(0, 8)} />
-      </section>
-
-      <section className="content-shell space-y-8">
-        <SectionHeading
-          eyebrow="Fresh Drops"
-          title="New arrivals with a softer footprint"
-          description="Current products are demo-friendly, but the storefront is built to scale for premium seasonal drops and evergreen essentials."
-        />
-        <ProductGrid products={latestProducts.slice(0, 4)} />
       </section>
 
       <section className="content-shell space-y-8">

@@ -43,7 +43,7 @@ export function HeaderClient() {
             aria-label="AnfaStyles home"
           >
             <Image
-              src="/branding/anfastyles-logo.webp"
+              src="/branding/anfastyles-logo.png"
               alt="AnfaStyles"
               width={1100}
               height={367}
