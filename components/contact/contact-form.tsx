@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -15,6 +16,10 @@ type ContactFormState = {
   message: string;
 };
 type ContactFormErrors = Partial<Record<keyof ContactFormState, string>>;
+type ContactResponse = {
+  message?: string;
+  fieldErrors?: ContactFormErrors;
+};
 
 function validateForm(form: ContactFormState) {
   const errors: ContactFormErrors = {};
@@ -56,32 +61,41 @@ export function ContactForm({ defaultSubject }: { defaultSubject?: string }) {
     message: "",
   });
   const [errors, setErrors] = useState<ContactFormErrors>({});
-  const [status, setStatus] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
   async function submit() {
     const nextErrors = validateForm(form);
     if (Object.keys(nextErrors).length > 0) {
       setErrors(nextErrors);
-      setStatus("Please correct the highlighted fields.");
+      setErrorMessage(null);
+      setSuccessMessage(null);
       return;
     }
 
     setPending(true);
-    setStatus(null);
+    setErrorMessage(null);
+    setSuccessMessage(null);
     setErrors({});
 
-    const response = await fetch("/api/contact", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
-    });
+    try {
+      const response = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
 
-    const payload = (await response.json()) as { message?: string };
-    setPending(false);
-    setStatus(payload.message ?? (response.ok ? "Message sent." : "Unable to send."));
+      const payload = (await response.json()) as ContactResponse;
+      setPending(false);
 
-    if (response.ok) {
+      if (!response.ok) {
+        setErrors(payload.fieldErrors ?? {});
+        setErrorMessage(payload.fieldErrors ? null : payload.message ?? "Unable to send your message.");
+        setSuccessMessage(null);
+        return;
+      }
+
       setForm({
         firstName: "",
         email: "",
@@ -90,18 +104,36 @@ export function ContactForm({ defaultSubject }: { defaultSubject?: string }) {
         message: "",
       });
       setErrors({});
+      setErrorMessage(null);
+      setSuccessMessage(payload.message ?? "Thanks. Your message has been sent.");
+    } catch {
+      setPending(false);
+      setSuccessMessage(null);
+      setErrorMessage("Unable to send your message right now. Please try again.");
     }
   }
 
   return (
     <div className="card-surface mx-auto max-w-2xl p-8">
       <div className="grid gap-5">
+        {successMessage ? (
+          <div className="rounded-[1.75rem] border border-emerald-300 bg-emerald-50 px-5 py-6 text-center text-emerald-900">
+            <p className="text-2xl font-semibold">Thanks for contacting us.</p>
+            <p className="mt-2 text-sm font-medium">{successMessage}</p>
+          </div>
+        ) : null}
+        {errorMessage ? (
+          <p className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+            {errorMessage}
+          </p>
+        ) : null}
         <label className="grid gap-2 text-sm font-semibold text-ink">
           First Name
           <Input
             value={form.firstName}
             required
             aria-invalid={Boolean(errors.firstName)}
+            className={cn(errors.firstName ? "border-red-400 focus:border-red-400 focus:ring-red-100" : "")}
             onChange={(event) => {
               const firstName = event.target.value;
               setForm((current) => ({ ...current, firstName }));
@@ -117,6 +149,7 @@ export function ContactForm({ defaultSubject }: { defaultSubject?: string }) {
             type="email"
             required
             aria-invalid={Boolean(errors.email)}
+            className={cn(errors.email ? "border-red-400 focus:border-red-400 focus:ring-red-100" : "")}
             onChange={(event) => {
               const email = event.target.value;
               setForm((current) => ({ ...current, email }));
@@ -159,6 +192,7 @@ export function ContactForm({ defaultSubject }: { defaultSubject?: string }) {
             required
             minLength={12}
             aria-invalid={Boolean(errors.message)}
+            className={cn(errors.message ? "border-red-400 focus:border-red-400 focus:ring-red-100" : "")}
             onChange={(event) => {
               const message = event.target.value;
               setForm((current) => ({ ...current, message }));
@@ -171,7 +205,6 @@ export function ContactForm({ defaultSubject }: { defaultSubject?: string }) {
         <Button type="button" className="w-full" disabled={pending} onClick={submit}>
           {pending ? "Sending..." : "Send Message"}
         </Button>
-        {status ? <p className="text-sm text-muted">{status}</p> : null}
       </div>
     </div>
   );

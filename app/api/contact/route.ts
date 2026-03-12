@@ -9,26 +9,34 @@ const contactSchema = z.object({
   message: z.string().min(12),
 });
 
-function formatValidationMessage(error: z.ZodError) {
-  const details = error.issues.map((issue) => {
+type ContactField = "firstName" | "email" | "message";
+type ContactFieldErrors = Partial<Record<ContactField, string>>;
+
+function getValidationFeedback(error: z.ZodError) {
+  const fieldErrors: ContactFieldErrors = {};
+
+  for (const issue of error.issues) {
     const field = issue.path[0];
 
     if (field === "email") {
-      return "Enter a valid email address.";
+      fieldErrors.email = "Enter a valid email address.";
+      continue;
     }
 
     if (field === "message") {
-      return "Message must be at least 12 characters.";
+      fieldErrors.message = "Message must be at least 12 characters.";
+      continue;
     }
 
     if (field === "firstName") {
-      return "Enter your first name.";
+      fieldErrors.firstName = "Enter your first name.";
     }
+  }
 
-    return issue.message;
-  });
-
-  return [...new Set(details)].join(" ");
+  return {
+    fieldErrors,
+    message: "Please correct the highlighted fields.",
+  };
 }
 
 export async function POST(request: Request) {
@@ -41,7 +49,8 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ message: formatValidationMessage(error) }, { status: 400 });
+      const feedback = getValidationFeedback(error);
+      return NextResponse.json(feedback, { status: 400 });
     }
 
     const message = error instanceof Error ? error.message : "Unable to submit your message.";
