@@ -55,12 +55,14 @@ export default async function HomePage() {
           {TRUST_BADGES.map((badge, index) => {
             const Icon = [ArrowRight, Truck, PackageCheck, Leaf][index];
             return (
-              <article key={badge.title} className="card-surface rounded-[1.8rem] p-6">
-                <div className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-forest/10 text-forest">
+              <article
+                key={badge.title}
+                className="rounded-[1.8rem] border border-border/60 bg-transparent px-6 py-7 shadow-none"
+              >
+                <div className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-forest/[0.08] text-forest">
                   <Icon className="h-5 w-5" />
                 </div>
                 <h2 className="display-font mt-5 text-2xl font-semibold text-ink">{badge.title}</h2>
-                <p className="mt-3 text-sm leading-7 text-muted">{badge.copy}</p>
               </article>
             );
           })}
@@ -71,7 +73,6 @@ export default async function HomePage() {
         <SectionHeading
           eyebrow="Fresh Drops"
           title="New arrivals with a softer footprint"
-          description="Current products are demo-friendly, but the storefront is built to scale for premium seasonal drops and evergreen essentials."
         />
         <ProductGrid products={latestProducts.slice(0, 4)} />
       </section>

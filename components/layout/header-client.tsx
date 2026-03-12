@@ -39,7 +39,7 @@ export function HeaderClient() {
           </button>
           <Link
             href="/"
-            className="rounded-xl bg-white/90 p-1.5 shadow-[0_10px_24px_rgba(29,39,29,0.08)]"
+            className="py-1"
             aria-label="AnfaStyles home"
           >
             <Image
