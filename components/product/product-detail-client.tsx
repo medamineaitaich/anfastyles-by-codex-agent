@@ -7,8 +7,8 @@ import { Button, ButtonLink } from "@/components/ui/button";
 import { ProductGrid } from "@/components/shop/product-grid";
 import { RatingStars } from "@/components/ui/rating-stars";
 import { RichText } from "@/components/ui/rich-text";
-import { formatDate, formatWooPrice } from "@/lib/utils";
 import { resolveSwatch } from "@/lib/swatch";
+import { formatDate, formatWooPrice } from "@/lib/utils";
 import { useCart } from "@/providers/cart-provider";
 import type { WooProduct, WooReview, WooVariation } from "@/lib/woo/types";
 
@@ -93,13 +93,15 @@ export function ProductDetailClient({
   const initialAttributes = Object.fromEntries(
     product.attributes
       .filter((attribute) => attribute.options?.length)
-      .map((attribute) => [attribute.name, preferredAttributes[attribute.name] || attribute.options?.[0] || ""]),
+      .map((attribute) => [
+        attribute.name,
+        preferredAttributes[attribute.name] || attribute.options?.[0] || "",
+      ]),
   );
   const [selectedAttributes, setSelectedAttributes] =
     useState<Record<string, string>>(initialAttributes);
   const [quantity, setQuantity] = useState(1);
-  const defaultMainImage =
-    product.images[0]?.src || groupedProducts[0]?.images[0]?.src || "";
+  const defaultMainImage = product.images[0]?.src || groupedProducts[0]?.images[0]?.src || "";
   const [activeImage, setActiveImage] = useState(defaultMainImage);
   const [reviewBody, setReviewBody] = useState("");
   const [reviewRating, setReviewRating] = useState(5);
@@ -135,7 +137,6 @@ export function ProductDetailClient({
     const nextAttributes = { ...selectedAttributes, [attributeName]: option };
     return isVariationCombinationAvailable(variations, nextAttributes);
   }
-
 
   function addCurrentSelection() {
     if (product.type === "grouped" || product.type === "external") {
@@ -178,177 +179,196 @@ export function ProductDetailClient({
 
   return (
     <section className="content-shell py-16">
-      <div className="mx-auto max-w-5xl space-y-8">
-        <div className="space-y-4">
-          <h1 className="display-font text-4xl font-semibold tracking-tight text-ink sm:text-5xl">
-            {product.name}
-          </h1>
-          <p className="text-xs font-semibold uppercase tracking-[0.26em] text-forest/70">
-            {product.categories[0]?.name ?? "Collection"}
-          </p>
-          <p className="text-3xl font-semibold text-forest">{formatWooPrice(displayPrice || 0)}</p>
-          <div className="flex items-center gap-3">
-            <RatingStars rating={Number(product.average_rating || 0)} />
-            <span className="text-sm text-muted">
-              {reviews.length ? `${reviews.length} review${reviews.length === 1 ? "" : "s"}` : "No reviews yet"}
-            </span>
-          </div>
-        </div>
-
-        <div>
-          <div className="relative aspect-square overflow-hidden rounded-[2rem] bg-[#dde8ea]">
-            {gallery[0] ? (
-              <Image
-                src={activeImage || gallery[0]}
-                alt={product.name}
-                fill
-                className="object-cover"
-                sizes="(max-width: 1024px) 100vw, 50vw"
-              />
-            ) : null}
-          </div>
-          <div className="mt-4 grid grid-cols-4 gap-3">
-            {gallery.slice(0, 4).map((image) => (
-              <button
-                key={image}
-                type="button"
-                className={`relative aspect-square overflow-hidden rounded-[1.1rem] border ${activeImage === image ? "border-forest" : "border-border"}`}
-                onClick={() => setActiveImage(image)}
-              >
-                <Image src={image} alt={product.name} fill className="object-cover" sizes="120px" />
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="space-y-8">
-          {shortDescription ? <RichText html={product.short_description} /> : null}
-
-          {product.type !== "grouped" ? (
-            <div className="space-y-5 rounded-[2rem] border border-border bg-white/80 p-5">
-              {product.attributes.map((attribute) => (
-                <div key={attribute.name} className="space-y-3">
-                  <p className="text-sm font-semibold uppercase tracking-[0.2em] text-muted">
-                    {attribute.name}
-                  </p>
-                  <div className="flex flex-wrap gap-3">
-                    {(attribute.options ?? []).map((option) => {
-                      const selected = selectedAttributes[attribute.name] === option;
-                      const isColor = attribute.name.toLowerCase().includes("color");
-                      const available = isOptionAvailable(attribute.name, option);
-                      return (
-                        <button
-                          key={option}
-                          type="button"
-                          disabled={!available}
-                          aria-disabled={!available}
-                          className={
-                            isColor
-                              ? `group relative inline-flex h-11 w-11 items-center justify-center rounded-full border-2 ${selected ? "border-forest" : "border-white"} ${!available ? "cursor-not-allowed opacity-45" : ""}`
-                              : `rounded-full border px-4 py-2 text-sm font-semibold ${selected ? "border-forest bg-forest text-white" : "border-border bg-white text-ink"} ${!available ? "cursor-not-allowed opacity-45 line-through" : ""}`
-                          }
-                          onClick={() =>
-                            available &&
-                            setSelectedAttributes((current) => {
-                              const nextAttributes = { ...current, [attribute.name]: option };
-                              const nextVariation = findMatchingVariation(variations, nextAttributes);
-                              setActiveImage(nextVariation?.image?.src || defaultMainImage);
-                              return nextAttributes;
-                            })
-                          }
-                          title={option}
-                        >
-                          {isColor ? (
-                            <span className="relative inline-flex h-8 w-8 items-center justify-center">
-                              <span
-                                className="h-8 w-8 rounded-full border border-black/5"
-                                style={{ backgroundColor: resolveSwatch(option) }}
-                              />
-                              {!available ? (
-                                <span className="pointer-events-none absolute text-base font-bold text-ink/75">✕</span>
-                              ) : null}
-                            </span>
-                          ) : (
-                            option
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
+      <div className="mx-auto max-w-7xl">
+        <div className="grid gap-10 xl:grid-cols-[minmax(0,1.12fr)_minmax(24rem,0.88fr)] xl:items-start">
+          <div className="xl:sticky xl:top-24">
+            <div className="relative aspect-square overflow-hidden rounded-[2rem] bg-[#dde8ea]">
+              {gallery[0] ? (
+                <Image
+                  src={activeImage || gallery[0]}
+                  alt={product.name}
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 1280px) 100vw, 56vw"
+                />
+              ) : null}
+            </div>
+            <div className="mt-4 grid grid-cols-4 gap-3 md:grid-cols-5">
+              {gallery.slice(0, 5).map((image) => (
+                <button
+                  key={image}
+                  type="button"
+                  className={`relative aspect-square overflow-hidden rounded-[1.1rem] border ${
+                    activeImage === image ? "border-forest" : "border-border"
+                  }`}
+                  onClick={() => setActiveImage(image)}
+                >
+                  <Image src={image} alt={product.name} fill className="object-cover" sizes="140px" />
+                </button>
               ))}
+            </div>
+          </div>
 
-              <div className="flex items-center gap-3">
-                <div className="inline-flex items-center rounded-full border border-border bg-white">
-                  <button
-                    type="button"
-                    className="inline-flex h-11 w-11 items-center justify-center"
-                    onClick={() => setQuantity((current) => Math.max(1, current - 1))}
-                  >
-                    -
-                  </button>
-                  <span className="min-w-10 text-center text-sm font-semibold">{quantity}</span>
-                  <button
-                    type="button"
-                    className="inline-flex h-11 w-11 items-center justify-center"
-                    onClick={() => setQuantity((current) => current + 1)}
-                  >
-                    +
-                  </button>
+          <div className="space-y-8 xl:pl-4">
+            <div className="space-y-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.26em] text-forest/70">
+                {product.categories[0]?.name ?? "Collection"}
+              </p>
+              <h1 className="display-font text-4xl font-semibold tracking-tight text-ink sm:text-5xl xl:text-6xl">
+                {product.name}
+              </h1>
+              <div className="flex flex-wrap items-center gap-3">
+                <p className="text-3xl font-semibold text-forest">{formatWooPrice(displayPrice || 0)}</p>
+                <div className="flex items-center gap-3">
+                  <RatingStars rating={Number(product.average_rating || 0)} />
+                  <span className="text-sm text-muted">
+                    {reviews.length
+                      ? `${reviews.length} review${reviews.length === 1 ? "" : "s"}`
+                      : "No reviews yet"}
+                  </span>
                 </div>
-                <Button className="flex-1" onClick={addCurrentSelection}>
-                  Add to cart
-                </Button>
               </div>
             </div>
-          ) : (
-            <div className="space-y-4 rounded-[2rem] border border-border bg-white/80 p-5">
-              <h2 className="display-font text-3xl font-semibold text-ink">Included styles</h2>
-              {groupedProducts.map((child) => (
-                <div
-                  key={child.id}
-                  className="flex items-center justify-between gap-4 rounded-[1.3rem] border border-border px-4 py-3"
-                >
-                  <div>
-                    <p className="font-semibold text-ink">{child.name}</p>
-                    <p className="text-sm text-muted">{formatWooPrice(child.price || child.regular_price)}</p>
+
+            {shortDescription ? <RichText html={product.short_description} /> : null}
+
+            {product.type !== "grouped" ? (
+              <div className="space-y-5 rounded-[2rem] border border-border bg-white/80 p-5 lg:p-6">
+                {product.attributes.map((attribute) => (
+                  <div key={attribute.name} className="space-y-3">
+                    <p className="text-sm font-semibold uppercase tracking-[0.2em] text-muted">
+                      {attribute.name}
+                    </p>
+                    <div className="flex flex-wrap gap-3">
+                      {(attribute.options ?? []).map((option) => {
+                        const selected = selectedAttributes[attribute.name] === option;
+                        const isColor = attribute.name.toLowerCase().includes("color");
+                        const available = isOptionAvailable(attribute.name, option);
+                        return (
+                          <button
+                            key={option}
+                            type="button"
+                            disabled={!available}
+                            aria-disabled={!available}
+                            className={
+                              isColor
+                                ? `group relative inline-flex h-11 w-11 items-center justify-center rounded-full border-2 ${
+                                    selected ? "border-forest" : "border-white"
+                                  } ${!available ? "cursor-not-allowed opacity-45" : ""}`
+                                : `rounded-full border px-4 py-2 text-sm font-semibold ${
+                                    selected
+                                      ? "border-forest bg-forest text-white"
+                                      : "border-border bg-white text-ink"
+                                  } ${!available ? "cursor-not-allowed opacity-45 line-through" : ""}`
+                            }
+                            onClick={() =>
+                              available &&
+                              setSelectedAttributes((current) => {
+                                const nextAttributes = { ...current, [attribute.name]: option };
+                                const nextVariation = findMatchingVariation(variations, nextAttributes);
+                                setActiveImage(nextVariation?.image?.src || defaultMainImage);
+                                return nextAttributes;
+                              })
+                            }
+                            title={option}
+                          >
+                            {isColor ? (
+                              <span className="relative inline-flex h-8 w-8 items-center justify-center">
+                                <span
+                                  className="h-8 w-8 rounded-full border border-black/5"
+                                  style={{ backgroundColor: resolveSwatch(option) }}
+                                />
+                                {!available ? (
+                                  <span className="pointer-events-none absolute text-base font-bold text-ink/75">
+                                    x
+                                  </span>
+                                ) : null}
+                              </span>
+                            ) : (
+                              option
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
-                  <Button
-                    onClick={() =>
-                      addItem({
-                        productId: child.id,
-                        slug: child.slug,
-                        name: child.name,
-                        image: child.images[0]?.src ?? "",
-                        priceCents: Math.round(Number(child.price || child.regular_price || 0) * 100),
-                        type: child.type,
-                      })
-                    }
-                  >
-                    Add
+                ))}
+
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                  <div className="inline-flex items-center rounded-full border border-border bg-white">
+                    <button
+                      type="button"
+                      className="inline-flex h-11 w-11 items-center justify-center"
+                      onClick={() => setQuantity((current) => Math.max(1, current - 1))}
+                    >
+                      -
+                    </button>
+                    <span className="min-w-10 text-center text-sm font-semibold">{quantity}</span>
+                    <button
+                      type="button"
+                      className="inline-flex h-11 w-11 items-center justify-center"
+                      onClick={() => setQuantity((current) => current + 1)}
+                    >
+                      +
+                    </button>
+                  </div>
+                  <Button className="w-full sm:flex-1" onClick={addCurrentSelection}>
+                    Add to cart
                   </Button>
                 </div>
-              ))}
-            </div>
-          )}
+              </div>
+            ) : (
+              <div className="space-y-4 rounded-[2rem] border border-border bg-white/80 p-5 lg:p-6">
+                <h2 className="display-font text-3xl font-semibold text-ink">Included styles</h2>
+                {groupedProducts.map((child) => (
+                  <div
+                    key={child.id}
+                    className="flex items-center justify-between gap-4 rounded-[1.3rem] border border-border px-4 py-3"
+                  >
+                    <div>
+                      <p className="font-semibold text-ink">{child.name}</p>
+                      <p className="text-sm text-muted">
+                        {formatWooPrice(child.price || child.regular_price)}
+                      </p>
+                    </div>
+                    <Button
+                      onClick={() =>
+                        addItem({
+                          productId: child.id,
+                          slug: child.slug,
+                          name: child.name,
+                          image: child.images[0]?.src ?? "",
+                          priceCents: Math.round(Number(child.price || child.regular_price || 0) * 100),
+                          type: child.type,
+                        })
+                      }
+                    >
+                      Add
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
 
-          <div className="rounded-[2rem] bg-forest p-5 text-white">
-            <div className="flex gap-3">
-              <ShieldCheck className="mt-1 h-5 w-5 shrink-0" />
-              <div>
-                <h2 className="display-font text-3xl font-semibold">After You Order</h2>
-                <p className="mt-2 text-sm leading-7 text-white/85">
-                  This item is printed on demand after your order is placed. Please allow a short production window before shipment.
-                </p>
+            <div className="rounded-[2rem] bg-forest p-5 text-white lg:p-6">
+              <div className="flex gap-3">
+                <ShieldCheck className="mt-1 h-5 w-5 shrink-0" />
+                <div>
+                  <h2 className="display-font text-3xl font-semibold">After You Order</h2>
+                  <p className="mt-2 text-sm leading-7 text-white/85">
+                    This item is printed on demand after your order is placed. Please allow a short
+                    production window before shipment.
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
 
-          {product.type === "external" ? (
-            <ButtonLink href={product.external_url || product.permalink} className="w-full">
-              {product.button_text || "Visit product"}
-            </ButtonLink>
-          ) : null}
+            {product.type === "external" ? (
+              <ButtonLink href={product.external_url || product.permalink} className="w-full">
+                {product.button_text || "Visit product"}
+              </ButtonLink>
+            ) : null}
+          </div>
         </div>
       </div>
 
@@ -372,7 +392,8 @@ export function ProductDetailClient({
                 ))
               ) : (
                 <div className="card-surface rounded-[1.7rem] p-5 text-sm leading-7 text-muted">
-                  No published reviews yet. This section is connected and ready for live WooCommerce reviews.
+                  No published reviews yet. This section is connected and ready for live WooCommerce
+                  reviews.
                 </div>
               )}
             </div>
