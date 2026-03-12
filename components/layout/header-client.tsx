@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Menu, Search, ShoppingBag, X } from "lucide-react";
@@ -36,8 +37,19 @@ export function HeaderClient() {
           >
             <Menu className="h-5 w-5" />
           </button>
-          <Link href="/" className="display-font text-3xl font-semibold tracking-tight text-forest">
-            AnfaStyles
+          <Link
+            href="/"
+            className="rounded-xl bg-white/90 p-1.5 shadow-[0_10px_24px_rgba(29,39,29,0.08)]"
+            aria-label="AnfaStyles home"
+          >
+            <Image
+              src="/branding/anfastyles-logo.webp"
+              alt="AnfaStyles"
+              width={1100}
+              height={367}
+              priority
+              className="h-10 w-auto sm:h-12"
+            />
           </Link>
         </div>
 
@@ -85,18 +97,18 @@ export function HeaderClient() {
       </div>
 
       {searchOpen ? (
-        <div className="border-t border-border bg-white/75">
+        <div className="border-t border-white/10 bg-ink/95 text-white shadow-2xl shadow-black/20">
           <div className="content-shell py-4">
             <form className="flex gap-3" onSubmit={handleSubmit}>
               <input
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
-                className="h-12 flex-1 rounded-full border border-border bg-white px-5 outline-none focus:border-forest/40"
+                className="h-12 flex-1 rounded-full border border-white/15 bg-white/10 px-5 text-white outline-none placeholder:text-white/60 focus:border-white/35"
                 placeholder="Search products, collections, composting gear..."
               />
               <button
                 type="submit"
-                className="inline-flex h-12 items-center justify-center rounded-full bg-forest px-6 text-sm font-semibold text-white"
+                className="inline-flex h-12 items-center justify-center rounded-full bg-white px-6 text-sm font-semibold text-ink hover:bg-sand"
               >
                 Search
               </button>
@@ -107,12 +119,12 @@ export function HeaderClient() {
 
       {mobileOpen ? (
         <div className="fixed inset-0 z-50 bg-ink/70 backdrop-blur-sm md:hidden">
-          <div className="ml-auto flex h-full w-full max-w-sm flex-col bg-sand p-5 shadow-2xl shadow-black/25">
+          <div className="ml-auto flex h-full w-full max-w-sm flex-col bg-ink p-5 text-white shadow-2xl shadow-black/25">
             <div className="flex items-center justify-between">
-              <span className="display-font text-2xl font-semibold text-forest">Menu</span>
+              <span className="display-font text-2xl font-semibold text-white">Menu</span>
               <button
                 type="button"
-                className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-border bg-white/70"
+                className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white"
                 onClick={() => setMobileOpen(false)}
                 aria-label="Close menu"
               >
@@ -124,7 +136,7 @@ export function HeaderClient() {
                 <Link
                   key={link.href}
                   href={link.href}
-                  className="block rounded-2xl border border-border bg-white px-5 py-4 text-lg font-semibold text-ink"
+                  className="block rounded-2xl border border-white/10 bg-white/[0.08] px-5 py-4 text-lg font-semibold text-white"
                   onClick={() => setMobileOpen(false)}
                 >
                   {link.label}

@@ -16,21 +16,29 @@ export default async function HomePage() {
 
   return (
     <div className="space-y-20 pb-8">
-      <section className="content-shell pt-6 sm:pt-8">
-        <div className="relative isolate flex min-h-[60vh] items-center justify-center overflow-hidden rounded-[2.5rem] text-white lg:min-h-[70vh]">
+      <section className="relative isolate overflow-hidden text-white">
+        <div className="relative flex min-h-[60vh] items-center justify-center lg:min-h-[70vh]">
           <Image
             src="/images/home-hero-banner.webp"
             alt="Nature-inspired graphic t-shirts displayed in a lush green garden setting."
             fill
             priority
-            sizes="(min-width: 1280px) 1280px, 100vw"
+            sizes="100vw"
             className="object-cover"
           />
-          <div className="absolute inset-0 bg-black/40" />
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(0,0,0,0.18),rgba(0,0,0,0.5))]" />
+          <div className="absolute inset-0 bg-black/30" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(0,0,0,0.12),rgba(0,0,0,0.36))]" />
 
-          <div className="relative z-10 flex w-full items-center justify-center px-6 py-12 text-center sm:px-10">
-            <div className="max-w-3xl rounded-[2rem] bg-black/15 px-6 py-8 backdrop-blur-[2px] sm:px-10 sm:py-10">
+          <div className="content-shell relative z-10 flex w-full items-center justify-center px-6 py-24 text-center sm:px-10 lg:py-28">
+            <div className="max-w-3xl rounded-[2rem] bg-black/10 px-6 py-8 backdrop-blur-[2px] sm:px-10 sm:py-10">
+              <Image
+                src="/branding/anfastyles-logo.webp"
+                alt="AnfaStyles"
+                width={1100}
+                height={367}
+                priority
+                className="mx-auto mb-6 h-auto w-full max-w-[20rem] rounded-2xl bg-white/92 p-3 shadow-[0_18px_50px_rgba(0,0,0,0.2)] sm:mb-8 sm:max-w-[24rem]"
+              />
               <h1 className="display-font text-4xl font-semibold leading-tight text-white drop-shadow-[0_6px_24px_rgba(0,0,0,0.45)] sm:text-5xl lg:text-7xl">
                 Wear What You Believe In
               </h1>

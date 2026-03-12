@@ -22,6 +22,13 @@ export const metadata: Metadata = {
     default: "AnfaStyles | Rooted in Nature",
     template: "%s | AnfaStyles",
   },
+  icons: {
+    icon: [
+      { url: "/favicon.ico" },
+      { url: "/icon.png", type: "image/png" },
+    ],
+    apple: [{ url: "/apple-icon.png", type: "image/png" }],
+  },
   description:
     "A premium headless WooCommerce storefront for sustainable apparel, zero-waste essentials, and nature-led living.",
 };
