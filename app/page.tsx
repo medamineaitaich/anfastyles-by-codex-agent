@@ -15,7 +15,7 @@ export default async function HomePage() {
   ]);
 
   return (
-    <div className="space-y-20 pb-8">
+    <div className="space-y-14 pb-8 sm:space-y-16">
       <section className="relative isolate overflow-hidden text-white">
         <div className="relative flex min-h-[60vh] items-center justify-center lg:min-h-[70vh]">
           <Image
@@ -50,14 +50,14 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <section className="content-shell">
+      <section className="content-shell -mt-2 sm:-mt-4">
         <div className="grid gap-4 md:grid-cols-4">
           {TRUST_BADGES.map((badge, index) => {
             const Icon = [ArrowRight, Truck, PackageCheck, Leaf][index];
             return (
               <article
                 key={badge.title}
-                className="rounded-[1.8rem] bg-transparent px-6 py-7 text-center shadow-none"
+                className="rounded-[1.8rem] bg-transparent px-6 py-3 text-center shadow-none"
               >
                 <div className="mx-auto inline-flex h-11 w-11 items-center justify-center rounded-full bg-forest/[0.08] text-forest">
                   <Icon className="h-5 w-5" />
