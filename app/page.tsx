@@ -1,4 +1,5 @@
 import { ArrowRight, Leaf, PackageCheck, Sprout, Truck } from "lucide-react";
+import Image from "next/image";
 import { FAQ_ITEMS, TRUST_BADGES } from "@/lib/constants";
 import { getFeaturedProducts, getLatestProducts } from "@/lib/woo/client";
 import { ButtonLink } from "@/components/ui/button";
@@ -15,24 +16,35 @@ export default async function HomePage() {
 
   return (
     <div className="space-y-20 pb-8">
-      <section className="content-shell pt-10">
-        <div className="hero-panel leaf-grid relative overflow-hidden rounded-[2.5rem] px-6 py-14 text-white sm:px-10 lg:px-16 lg:py-20">
-          <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(110deg,rgba(12,28,10,0.56),rgba(20,43,18,0.32)_55%,rgba(20,43,18,0.2))]" />
-          <div className="relative max-w-3xl">
-            <p className="text-xs font-semibold uppercase tracking-[0.35em] text-white/85">
-              Sustainable lifestyle apparel
-            </p>
-            <h1 className="display-font mt-6 max-w-4xl text-5xl font-semibold leading-tight sm:text-6xl lg:text-7xl">
-              Rooted in Nature. Designed for You.
-            </h1>
-            <p className="mt-6 max-w-2xl text-lg leading-8 text-white/92">
-              Premium, zero-waste apparel for composting, permaculture, and sustainability communities. Wear your values with calm confidence.
-            </p>
-            <div className="mt-10 flex flex-col gap-4 sm:flex-row">
-              <ButtonLink href="/shop">Shop Collection</ButtonLink>
-              <ButtonLink href="/about" variant="secondary" className="border-white/60 bg-white/18 text-white hover:bg-white/26">
-                Learn More
-              </ButtonLink>
+      <section className="content-shell pt-6 sm:pt-8">
+        <div className="relative isolate flex min-h-[60vh] items-center justify-center overflow-hidden rounded-[2.5rem] text-white lg:min-h-[70vh]">
+          <Image
+            src="/images/home-hero-banner.webp"
+            alt="Nature-inspired graphic t-shirts displayed in a lush green garden setting."
+            fill
+            priority
+            sizes="(min-width: 1280px) 1280px, 100vw"
+            className="object-cover"
+          />
+          <div className="absolute inset-0 bg-black/40" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(0,0,0,0.18),rgba(0,0,0,0.5))]" />
+
+          <div className="relative z-10 flex w-full items-center justify-center px-6 py-12 text-center sm:px-10">
+            <div className="max-w-3xl rounded-[2rem] bg-black/15 px-6 py-8 backdrop-blur-[2px] sm:px-10 sm:py-10">
+              <h1 className="display-font text-4xl font-semibold leading-tight text-white drop-shadow-[0_6px_24px_rgba(0,0,0,0.45)] sm:text-5xl lg:text-7xl">
+                Wear What You Believe In
+              </h1>
+              <p className="mx-auto mt-5 max-w-2xl text-base leading-7 text-white/92 sm:text-lg sm:leading-8">
+                Nature inspired apparel for gardeners, permaculture lovers and eco-conscious people.
+              </p>
+              <div className="mt-8 flex justify-center">
+                <ButtonLink
+                  href="/shop"
+                  className="bg-white text-ink shadow-[0_18px_40px_rgba(0,0,0,0.25)] hover:bg-sand"
+                >
+                  Shop Now
+                </ButtonLink>
+              </div>
             </div>
           </div>
         </div>
