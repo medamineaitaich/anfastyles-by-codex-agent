@@ -48,7 +48,7 @@ export function HeaderClient() {
               width={1100}
               height={367}
               priority
-              className="h-10 w-auto sm:h-12"
+              className="h-12 w-auto sm:h-14"
             />
           </Link>
         </div>

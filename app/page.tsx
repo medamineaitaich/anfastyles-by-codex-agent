@@ -57,9 +57,9 @@ export default async function HomePage() {
             return (
               <article
                 key={badge.title}
-                className="rounded-[1.8rem] border border-border/60 bg-transparent px-6 py-7 shadow-none"
+                className="rounded-[1.8rem] bg-transparent px-6 py-7 text-center shadow-none"
               >
-                <div className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-forest/[0.08] text-forest">
+                <div className="mx-auto inline-flex h-11 w-11 items-center justify-center rounded-full bg-forest/[0.08] text-forest">
                   <Icon className="h-5 w-5" />
                 </div>
                 <h2 className="display-font mt-5 text-2xl font-semibold text-ink">{badge.title}</h2>
