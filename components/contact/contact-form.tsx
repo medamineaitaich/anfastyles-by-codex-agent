@@ -6,6 +6,14 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 
 const SUBJECT_OPTIONS = ["General question", "Order support", "Refund request"] as const;
+type SubjectOption = (typeof SUBJECT_OPTIONS)[number];
+type ContactFormState = {
+  firstName: string;
+  email: string;
+  subject: SubjectOption;
+  orderNumber: string;
+  message: string;
+};
 
 export function ContactForm({ defaultSubject }: { defaultSubject?: string }) {
   const initialSubject = useMemo(() => {
@@ -21,7 +29,7 @@ export function ContactForm({ defaultSubject }: { defaultSubject?: string }) {
     return matched ?? "General question";
   }, [defaultSubject]);
 
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<ContactFormState>({
     firstName: "",
     email: "",
     subject: initialSubject,
@@ -79,7 +87,11 @@ export function ContactForm({ defaultSubject }: { defaultSubject?: string }) {
           <select
             value={form.subject}
             className="h-12 rounded-2xl border border-border bg-white/80 px-4 text-sm outline-none"
-            onChange={(event) => setForm((current) => ({ ...current, subject: event.target.value }))}
+            onChange={(event) => {
+              const subject =
+                SUBJECT_OPTIONS.find((option) => option === event.target.value) ?? "General question";
+              setForm((current) => ({ ...current, subject }));
+            }}
           >
             {SUBJECT_OPTIONS.map((option) => (
               <option key={option} value={option}>
