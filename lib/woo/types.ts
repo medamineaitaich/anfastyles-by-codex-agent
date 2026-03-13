@@ -144,6 +144,7 @@ export type WooOrder = {
   date_created: string;
   total: string;
   shipping_total: string;
+  tax_total: string;
   discount_total: string;
   payment_method: string;
   payment_method_title: string;

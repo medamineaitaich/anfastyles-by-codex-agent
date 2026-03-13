@@ -29,10 +29,14 @@ export async function GET(
     return NextResponse.json({ message: "Invoice access denied." }, { status: 403 });
   }
 
-  return new NextResponse(buildInvoicePdf(order), {
+  const pdf = await buildInvoicePdf(order);
+  const pdfBytes = new Uint8Array(pdf);
+
+  return new NextResponse(pdfBytes, {
     headers: {
       "Content-Type": "application/pdf",
       "Content-Disposition": `attachment; filename="anfastyles-invoice-${order.number}.pdf"`,
+      "Cache-Control": "private, no-store, max-age=0",
     },
   });
 }
