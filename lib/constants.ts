@@ -81,15 +81,3 @@ export const FAQ_ITEMS = [
   },
 ] as const;
 
-export const PAYMENT_OPTIONS = [
-  {
-    id: "cod",
-    label: "Cash on Delivery",
-    description: "Useful for testing the checkout flow and compatible with the current WooCommerce setup.",
-  },
-  {
-    id: "manual",
-    label: "Manual Review",
-    description: "Places the order in pending status while payment options are finalized.",
-  },
-] as const;

@@ -1,9 +1,7 @@
 import "server-only";
 
 import { cache } from "react";
-import { FLAT_SHIPPING_CENTS, FREE_SHIPPING_THRESHOLD_CENTS } from "@/lib/constants";
 import type {
-  CartItem,
   WooCategory,
   WooCustomer,
   WooOrder,
@@ -452,6 +450,10 @@ export async function getOrderById(orderId: number) {
   return fetchWoo<WooOrder>(`/orders/${orderId}`, undefined, "admin");
 }
 
+export async function getPaymentGateway<T = unknown>(gatewayId: string) {
+  return fetchWoo<T>(`/payment_gateways/${gatewayId}`, undefined, "admin");
+}
+
 export async function verifyWordPressLogin(username: string, password: string) {
   const env = assertEnv();
   const response = await fetch(`${env.baseUrl}/wp-login.php`, {
@@ -476,79 +478,5 @@ export async function verifyWordPressLogin(username: string, password: string) {
     (body.includes("My account") ||
       body.includes("woocommerce-MyAccount-navigation") ||
       body.includes("woocommerce-account"))
-  );
-}
-
-export async function createOrder(input: {
-  customerId?: number;
-  billing: WooCustomer["billing"];
-  shipping: WooCustomer["shipping"];
-  customerNote?: string;
-  items: CartItem[];
-  paymentMethod: "cod" | "manual";
-}) {
-  const lineItems = await Promise.all(
-    input.items.map(async (item) => {
-      const product = await fetchWoo<WooProduct>(`/products/${item.productId}`, undefined, "admin");
-
-      let price = product.price;
-      if (item.variationId) {
-        const variation = await fetchWoo<WooVariation>(
-          `/products/${item.productId}/variations/${item.variationId}`,
-          undefined,
-          "admin",
-        );
-        price = variation.price;
-      }
-
-      return {
-        product_id: item.productId,
-        variation_id: item.variationId,
-        quantity: item.quantity,
-        total: (Number(price) * item.quantity).toFixed(2),
-        meta_data: Object.entries(item.selectedAttributes ?? {}).map(([key, value]) => ({
-          key,
-          value,
-        })),
-      };
-    }),
-  );
-
-  const subtotalCents = lineItems.reduce((total, item) => total + Math.round(Number(item.total) * 100), 0);
-  const shippingCents =
-    subtotalCents >= FREE_SHIPPING_THRESHOLD_CENTS ? 0 : FLAT_SHIPPING_CENTS;
-
-  return fetchWoo<WooOrder>(
-    "/orders",
-    {
-      method: "POST",
-      body: JSON.stringify({
-        payment_method: "cod",
-        payment_method_title:
-          input.paymentMethod === "cod" ? "Cash on delivery" : "Manual review",
-        set_paid: false,
-        customer_id: input.customerId ?? 0,
-        customer_note: input.customerNote,
-        status: "pending",
-        billing: input.billing,
-        shipping: input.shipping,
-        line_items: lineItems,
-        shipping_lines:
-          shippingCents > 0
-            ? [
-                {
-                  method_id: "flat_rate",
-                  method_title: "Flat Rate Shipping",
-                  total: (shippingCents / 100).toFixed(2),
-                },
-              ]
-            : [],
-        meta_data: [
-          { key: "anfastyles_headless", value: "true" },
-          { key: "anfastyles_checkout_channel", value: "nextjs-storefront" },
-        ],
-      }),
-    },
-    "admin",
   );
 }

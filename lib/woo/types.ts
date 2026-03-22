@@ -171,3 +171,139 @@ export type CartItem = {
   type: WooProduct["type"];
   selectedAttributes?: Record<string, string>;
 };
+
+export type WooStoreMoney = {
+  currency_code: string;
+  currency_symbol: string;
+  currency_minor_unit: number;
+  currency_decimal_separator: string;
+  currency_thousand_separator: string;
+  currency_prefix: string;
+  currency_suffix: string;
+};
+
+export type WooStoreItemImage = {
+  id: number;
+  src: string;
+  thumbnail?: string;
+  srcset?: string;
+  sizes?: string;
+  name?: string;
+  alt?: string;
+};
+
+export type WooStoreCartItemVariation = {
+  raw_attribute?: string;
+  attribute: string;
+  value: string;
+};
+
+export type WooStoreCartItem = {
+  key: string;
+  id: number;
+  type: "simple" | "variation";
+  quantity: number;
+  name: string;
+  permalink: string;
+  images: WooStoreItemImage[];
+  variation: WooStoreCartItemVariation[];
+  prices: WooStoreMoney & {
+    price: string;
+    regular_price: string;
+    sale_price: string;
+    price_range: null | {
+      min_amount: string;
+      max_amount: string;
+    };
+    raw_prices?: {
+      precision: number;
+      price: string;
+      regular_price: string;
+      sale_price: string;
+    };
+  };
+  totals: WooStoreMoney & {
+    line_subtotal: string;
+    line_subtotal_tax: string;
+    line_total: string;
+    line_total_tax: string;
+  };
+};
+
+export type WooStoreShippingRate = WooStoreMoney & {
+  rate_id: string;
+  name: string;
+  description: string;
+  delivery_time: string;
+  price: string;
+  taxes: string;
+  instance_id: number;
+  method_id: string;
+  selected: boolean;
+  meta_data?: Array<{ key: string; value: string }>;
+};
+
+export type WooStoreShippingPackage = {
+  package_id: number;
+  name: string;
+  destination: Omit<WooAddress, "first_name" | "last_name" | "company" | "email">;
+  items: Array<{ key: string; name: string; quantity: number }>;
+  shipping_rates: WooStoreShippingRate[];
+};
+
+export type WooStoreCart = {
+  items: WooStoreCartItem[];
+  coupons: unknown[];
+  fees: unknown[];
+  totals: WooStoreMoney & {
+    total_items: string;
+    total_items_tax: string;
+    total_fees: string;
+    total_fees_tax: string;
+    total_discount: string;
+    total_discount_tax: string;
+    total_shipping: string | null;
+    total_shipping_tax: string | null;
+    total_price: string;
+    total_tax: string;
+    tax_lines: unknown[];
+  };
+  shipping_address: WooAddress;
+  billing_address: WooAddress;
+  needs_payment: boolean;
+  needs_shipping: boolean;
+  payment_requirements: string[];
+  has_calculated_shipping: boolean;
+  shipping_rates: WooStoreShippingPackage[];
+  items_count: number;
+  items_weight: number;
+  cross_sells: unknown[];
+  errors: Array<{ code?: string; message?: string }>;
+  payment_methods: string[];
+  extensions: Record<string, unknown>;
+};
+
+export type WooStoreCheckoutPaymentDetail = {
+  key: string;
+  value: string;
+};
+
+export type WooStoreCheckout = {
+  order_id: number;
+  status: string;
+  order_key: string;
+  order_number: string;
+  customer_note: string;
+  customer_id: number;
+  billing_address: WooAddress;
+  shipping_address: WooAddress;
+  payment_method: string;
+  payment_result: {
+    payment_status: string;
+    payment_details: WooStoreCheckoutPaymentDetail[];
+    redirect_url: string;
+  };
+  additional_fields?: Record<string, unknown>;
+  __experimentalCart: unknown;
+  extensions: Record<string, unknown>;
+};

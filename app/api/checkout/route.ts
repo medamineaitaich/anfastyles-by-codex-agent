@@ -1,20 +1,12 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { getSession } from "@/lib/session";
-import { createOrder } from "@/lib/woo/client";
-
-const cartItemSchema = z.object({
-  key: z.string(),
-  productId: z.number(),
-  variationId: z.number().optional(),
-  slug: z.string(),
-  name: z.string(),
-  image: z.string(),
-  priceCents: z.number(),
-  quantity: z.number().min(1),
-  type: z.enum(["simple", "variable", "grouped", "external"]),
-  selectedAttributes: z.record(z.string(), z.string()).optional(),
-});
+import { CHECKOUT_PAYMENT_DATA_CONTRACT } from "@/lib/checkout/payment";
+import { resolveWooPaymentsClientConfig } from "@/lib/checkout/woopayments-config";
+import {
+  getStoreCheckoutDraft,
+  submitStoreCheckout,
+  WooStoreApiError,
+} from "@/lib/woo/store";
 
 const checkoutSchema = z.object({
   billing: z.object({
@@ -29,9 +21,21 @@ const checkoutSchema = z.object({
     country: z.string().min(2),
   }),
   customerNote: z.string().optional(),
-  paymentMethod: z.enum(["cod", "manual"]),
-  items: z.array(cartItemSchema).min(1),
+  paymentMethod: z.string().min(1),
+  paymentData: z
+    .array(
+      z.object({
+        key: z.string().min(1),
+        value: z.union([z.string(), z.number(), z.boolean()]),
+      }),
+    )
+    .optional()
+    .default([]),
 });
+
+function getCartToken(request: Request) {
+  return request.headers.get("Cart-Token");
+}
 
 function splitFullName(fullName: string) {
   const normalized = fullName.trim().replace(/\s+/g, " ");
@@ -42,23 +46,129 @@ function splitFullName(fullName: string) {
   };
 }
 
-const messageByPath: Record<string, string> = {
-  "billing.full_name": "Please enter your full name.",
-  "billing.email": "Please enter your email address.",
-  "billing.address_1": "Please enter your address.",
-  "billing.address_2": "Please enter your apartment, suite, or unit.",
-  "billing.city": "Please enter your city.",
-  "billing.state": "Please select your state.",
-  "billing.country": "Please select your country.",
-};
+function withStoreHeaders(response: NextResponse, cartToken: string | null, nonce: string | null) {
+  if (cartToken) {
+    response.headers.set("Cart-Token", cartToken);
+  }
+
+  if (nonce) {
+    response.headers.set("Nonce", nonce);
+  }
+
+  return response;
+}
+
+function formatPaymentRequiredMessage(paymentMethod: string) {
+  if (paymentMethod === "woocommerce_payments") {
+    return "WooPayments is selected, but the secure card fields are incomplete. Complete the card details so checkout can create payment_data and finalize the order.";
+  }
+
+  return `Payment details are required before finalizing ${paymentMethod}. The Store API checkout flow is ready, but the inline payment fields still need to be connected.`;
+}
+
+function extractStoreErrorMessage(error: WooStoreApiError) {
+  const payload = error.payload;
+
+  if (typeof payload === "object" && payload !== null) {
+    if (
+      "payment_result" in payload &&
+      payload.payment_result &&
+      typeof payload.payment_result === "object" &&
+      "payment_details" in payload.payment_result &&
+      Array.isArray(payload.payment_result.payment_details)
+    ) {
+      const errorDetail = payload.payment_result.payment_details.find(
+        (entry): entry is { key: string; value: string } =>
+          typeof entry === "object" &&
+          entry !== null &&
+          "key" in entry &&
+          "value" in entry &&
+          entry.key === "errorMessage" &&
+          typeof entry.value === "string",
+      );
+
+      if (errorDetail?.value) {
+        return errorDetail.value;
+      }
+    }
+
+    if ("message" in payload && typeof payload.message === "string") {
+      return payload.message;
+    }
+  }
+
+  return error.message;
+}
+
+export async function GET(request: Request) {
+  const cartToken = getCartToken(request);
+
+  if (!cartToken) {
+    return NextResponse.json(
+      {
+        message: "Missing Cart-Token header.",
+      },
+      { status: 400 },
+    );
+  }
+
+  try {
+    const response = await getStoreCheckoutDraft(cartToken);
+    return withStoreHeaders(
+      NextResponse.json({
+        ok: true,
+        checkout: response.data,
+        paymentDataContract: CHECKOUT_PAYMENT_DATA_CONTRACT,
+      }),
+      response.cartToken,
+      response.nonce,
+    );
+  } catch (error) {
+    if (error instanceof WooStoreApiError) {
+      console.error("[woo-store/checkout] draft-error", {
+        status: error.status,
+        cartToken: error.cartToken ? `${error.cartToken.slice(0, 12)}...` : null,
+        payload: error.payload,
+      });
+
+      return withStoreHeaders(
+        NextResponse.json(
+          {
+            message: extractStoreErrorMessage(error),
+            details: error.payload,
+          },
+          { status: error.status },
+        ),
+        error.cartToken,
+        null,
+      );
+    }
+
+    return NextResponse.json(
+      {
+        message: error instanceof Error ? error.message : "Unable to load checkout draft.",
+      },
+      { status: 400 },
+    );
+  }
+}
 
 export async function POST(request: Request) {
-  const session = await getSession();
+  const cartToken = getCartToken(request);
+
+  if (!cartToken) {
+    return NextResponse.json(
+      {
+        message: "Missing Cart-Token header.",
+      },
+      { status: 400 },
+    );
+  }
 
   try {
     const payload = checkoutSchema.parse(await request.json());
     const { firstName, lastName } = splitFullName(payload.billing.full_name);
-    const billing = {
+    const billingAddress = {
       first_name: firstName,
       last_name: lastName,
       email: payload.billing.email,
@@ -71,43 +181,105 @@ export async function POST(request: Request) {
       country: payload.billing.country,
     };
 
-    const order = await createOrder({
-      customerId: session?.customerId,
-      billing,
-      shipping: billing,
-      customerNote: payload.customerNote,
-      paymentMethod: payload.paymentMethod,
-      items: payload.items,
-    });
-
-    return NextResponse.json({
-      ok: true,
-      orderId: order.id,
-      orderNumber: order.number,
-      status: order.status,
-      paymentUrl: order.payment_url,
-    });
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      const fieldErrors = Object.fromEntries(
-        error.issues
-          .map((issue) => {
-            const path = issue.path.join(".");
-            return [path, messageByPath[path] ?? "Please review this field."];
-          })
-          .filter(([path]) => Boolean(path)),
-      );
+    if (!payload.paymentData.length) {
+      console.info("[woo-store/checkout] blocked-submit", {
+        paymentMethod: payload.paymentMethod,
+        reason: "missing_payment_data",
+      });
 
       return NextResponse.json(
         {
-          message: "Please correct the highlighted checkout fields.",
-          fieldErrors,
+          message: formatPaymentRequiredMessage(payload.paymentMethod),
+          requiresPaymentData: true,
+          paymentDataContract: CHECKOUT_PAYMENT_DATA_CONTRACT,
         },
         { status: 400 },
       );
     }
 
-    const message = error instanceof Error ? error.message : "Unable to place the order.";
-    return NextResponse.json({ message }, { status: 400 });
+    if (payload.paymentMethod === "woocommerce_payments") {
+      const wooPaymentsConfig = await resolveWooPaymentsClientConfig({
+        cartToken,
+        locale: request.headers.get("Accept-Language"),
+      });
+
+      if (!wooPaymentsConfig.isReady) {
+        console.info("[woo-store/checkout] blocked-submit", {
+          paymentMethod: payload.paymentMethod,
+          reason: "woopayments_config_not_ready",
+          missingFields: wooPaymentsConfig.missingFields,
+        });
+
+        return withStoreHeaders(
+          NextResponse.json(
+            {
+              message: wooPaymentsConfig.message,
+              requiresPaymentData: true,
+              paymentDataContract: CHECKOUT_PAYMENT_DATA_CONTRACT,
+              wooPaymentsConfig,
+            },
+            { status: 400 },
+          ),
+          wooPaymentsConfig.cartToken,
+          wooPaymentsConfig.nonce,
+        );
+      }
+    }
+
+    const response = await submitStoreCheckout(
+      {
+        billingAddress,
+        shippingAddress: billingAddress,
+        customerNote: payload.customerNote,
+        paymentMethod: payload.paymentMethod,
+        paymentData: payload.paymentData.map((entry) => ({
+          key: entry.key,
+          value: String(entry.value),
+        })),
+      },
+      cartToken,
+    );
+
+    return withStoreHeaders(
+      NextResponse.json({
+        ok: true,
+        orderId: response.data.order_id,
+        orderNumber: response.data.order_number,
+        status: response.data.status,
+        paymentMethod: response.data.payment_method,
+        paymentResult: response.data.payment_result,
+        checkout: response.data,
+        paymentDataContract: CHECKOUT_PAYMENT_DATA_CONTRACT,
+      }),
+      response.cartToken,
+      response.nonce,
+    );
+  } catch (error) {
+    if (error instanceof WooStoreApiError) {
+      console.error("[woo-store/checkout] submit-error", {
+        status: error.status,
+        cartToken: error.cartToken ? `${error.cartToken.slice(0, 12)}...` : null,
+        payload: error.payload,
+      });
+
+      return withStoreHeaders(
+        NextResponse.json(
+          {
+            message: extractStoreErrorMessage(error),
+            details: error.payload,
+          },
+          { status: error.status },
+        ),
+        error.cartToken,
+        null,
+      );
+    }
+
+    return NextResponse.json(
+      {
+        message: error instanceof Error ? error.message : "Unable to process checkout.",
+      },
+      { status: 400 },
+    );
   }
 }
