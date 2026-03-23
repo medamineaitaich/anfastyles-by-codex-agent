@@ -169,10 +169,10 @@ export function WooPaymentsInlinePaymentSection({
   }
 
   return (
-    <div className="mt-6 space-y-4 rounded-[1.6rem] border border-forest/20 bg-white/80 p-5">
+    <div className="mt-6 space-y-4 rounded-[1.55rem] border border-[#ded7ca] bg-[#fcfbf8] p-5 sm:p-6">
       <div>
         <p className="text-xs font-semibold uppercase tracking-[0.24em] text-forest/70">
-          WooPayments Inline
+          Secure checkout
         </p>
         <h3 className="mt-2 text-xl font-semibold text-ink">Secure card payment</h3>
         <p className="mt-2 text-sm leading-7 text-muted">
@@ -183,12 +183,12 @@ export function WooPaymentsInlinePaymentSection({
       <div
         className={`rounded-[1.4rem] px-4 py-3 text-sm leading-7 ${
           configState.status === "loading"
-            ? "border border-forest/20 bg-forest/5 text-forest"
+            ? "border border-forest/15 bg-[#f3f8f0] text-forest"
             : configState.status === "error"
-              ? "border border-[#b55245]/30 bg-[#b55245]/5 text-[#7d3028]"
+              ? "border border-[#b55245]/20 bg-[#fff7f5] text-[#7d3028]"
               : canMountSdk
-                ? "border border-forest/20 bg-forest/5 text-forest"
-                : "border border-amber-300/40 bg-amber-50 text-amber-900"
+                ? "border border-forest/15 bg-[#f3f8f0] text-forest"
+                : "border border-[#e2d7ba] bg-[#fbf7ea] text-[#7f6842]"
         }`}
       >
         {configState.status === "loading"
@@ -200,9 +200,9 @@ export function WooPaymentsInlinePaymentSection({
               : "Secure payment fields are not ready right now. Please try again in a moment."}
       </div>
 
-      <div className="rounded-[1.4rem] border border-dashed border-forest/40 bg-cream px-5 py-6">
+      <div className="rounded-[1.4rem] border border-[#e1dacd] bg-white px-5 py-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]">
         <p className="text-sm font-semibold text-ink">Card details</p>
-        <div className="mt-4 min-h-24 rounded-[1rem] border border-dashed border-border bg-white/90 p-3">
+        <div className="mt-4 min-h-24 rounded-[1.15rem] border border-[#ddd6c8] bg-[#fcfaf6] p-3 sm:p-4">
           {canMountSdk && config ? (
             <WooPaymentsPaymentElement
               config={config}
@@ -212,7 +212,7 @@ export function WooPaymentsInlinePaymentSection({
           ) : (
             <div
               id="woopayments-inline-sdk-mount"
-              className="min-h-24 rounded-[0.9rem] border border-dashed border-border/80 bg-white/70"
+              className="min-h-24 rounded-[1rem] border border-dashed border-[#d9d1c1] bg-white"
             />
           )}
         </div>

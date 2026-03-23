@@ -107,7 +107,7 @@ function WooPaymentsPaymentElementInner({
 
   const collectPaymentData = useEffectEvent(async (): Promise<CheckoutPaymentCollectionResult> => {
     if (!stripe || !elements) {
-      return toCollectionError("WooPayments is still loading. Please wait a moment and try again.");
+      return toCollectionError("Secure payment fields are still loading. Please wait a moment and try again.");
     }
 
     const submitResult = await elements.submit();
@@ -143,7 +143,7 @@ function WooPaymentsPaymentElementInner({
     return {
       ok: adapted.ready,
       paymentData: adapted.paymentData,
-      message: adapted.ready ? null : "WooPayments could not build payment_data from the Stripe result.",
+      message: adapted.ready ? null : "We could not prepare your payment details. Please try again.",
     };
   });
 
@@ -174,7 +174,10 @@ function WooPaymentsPaymentElementInner({
 
   return (
     <div className="space-y-4">
-      <div id="woopayments-inline-sdk-mount" className="rounded-[1rem] bg-white/95 p-3">
+      <div
+        id="woopayments-inline-sdk-mount"
+        className="rounded-[1.15rem] border border-[#ddd6c8] bg-white p-3 sm:p-4"
+      >
         <PaymentElement
           options={{
             layout: "tabs",
@@ -190,7 +193,7 @@ function WooPaymentsPaymentElementInner({
         />
       </div>
       {config.isSavedCardsEnabled ? (
-        <label className="flex items-start gap-3 text-sm text-muted">
+        <label className="flex items-start gap-3 rounded-[1rem] bg-[#f7f3eb] px-4 py-3 text-sm text-muted">
           <input
             type="checkbox"
             className="mt-1 h-4 w-4 rounded border-border text-forest"
@@ -200,7 +203,11 @@ function WooPaymentsPaymentElementInner({
           <span>Save this card for future purchases.</span>
         </label>
       ) : null}
-      {errorMessage ? <p className="text-sm text-[#b55245]">{errorMessage}</p> : null}
+      {errorMessage ? (
+        <p className="rounded-[1rem] border border-[#b55245]/20 bg-[#fff7f5] px-4 py-3 text-sm text-[#8f3a31]">
+          {errorMessage}
+        </p>
+      ) : null}
     </div>
   );
 }

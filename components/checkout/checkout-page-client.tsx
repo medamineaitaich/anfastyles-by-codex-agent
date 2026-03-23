@@ -76,6 +76,15 @@ function getSuccessMessage(paymentStatus: string | null) {
   return "Your payment was received successfully and your order is now confirmed.";
 }
 
+const checkoutCardClassName =
+  "rounded-[1.85rem] border border-[#e3ddd1] bg-[#fffdf9] shadow-[0_28px_60px_rgba(29,39,29,0.07)]";
+const checkoutFieldClassName =
+  "h-14 rounded-[1.15rem] border-[#d9d3c7] bg-[#fcfaf6] px-4 text-[0.95rem] shadow-none focus:border-forest/45 focus:ring-4 focus:ring-forest/8";
+const checkoutFieldErrorClassName =
+  "border-[#b55245] bg-[#fff8f6] focus:border-[#b55245] focus:ring-[#b55245]/10";
+const sectionEyebrowClassName =
+  "text-[11px] font-semibold uppercase tracking-[0.28em] text-[#897f70]";
+
 export function CheckoutPageClient({
   customer,
 }: {
@@ -609,7 +618,6 @@ export function CheckoutPageClient({
       });
       return;
     }
-
     await finalizeSuccessfulCheckout({
       orderId: payload.orderId,
       orderNumber: payload.orderNumber,
@@ -621,15 +629,17 @@ export function CheckoutPageClient({
 
   if (success) {
     return (
-      <section className="content-shell py-16">
-        <div className="card-surface mx-auto max-w-3xl p-10 text-center">
+      <section className="content-shell py-10 sm:py-14 lg:py-16">
+        <div
+          className={`${checkoutCardClassName} mx-auto max-w-3xl px-6 py-10 text-center sm:px-10 sm:py-12`}
+        >
           <p className="text-xs font-semibold uppercase tracking-[0.28em] text-forest/70">
             Order placed
           </p>
-          <h1 className="display-font mt-4 text-5xl font-semibold text-ink">
+          <h1 className="display-font mt-4 text-4xl font-semibold text-ink sm:text-5xl">
             Thank you for your order.
           </h1>
-          <p className="mt-4 text-base leading-7 text-muted">
+          <p className="mx-auto mt-4 max-w-2xl text-base leading-7 text-muted">
             {getSuccessMessage(success.paymentStatus)}
           </p>
           <p className="mt-3 text-base leading-7 text-muted">
@@ -637,16 +647,21 @@ export function CheckoutPageClient({
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-3">
             {success.redirectUrl ? (
-              <ButtonLink href={success.redirectUrl} variant="secondary">
+              <ButtonLink
+                href={success.redirectUrl}
+                variant="secondary"
+                className="rounded-[1.15rem] px-6"
+              >
                 View order details
               </ButtonLink>
             ) : null}
             <ButtonLink
               href={`/api/invoice/${success.orderId}?email=${encodeURIComponent(form.billing.email)}`}
+              className="rounded-[1.15rem] px-6"
             >
               Download invoice
             </ButtonLink>
-            <ButtonLink href="/shop" variant="secondary">
+            <ButtonLink href="/shop" variant="secondary" className="rounded-[1.15rem] px-6">
               Continue shopping
             </ButtonLink>
           </div>
@@ -656,30 +671,35 @@ export function CheckoutPageClient({
   }
 
   return (
-    <section className="content-shell py-16">
-      <div className="mb-10 max-w-2xl">
+    <section className="content-shell py-10 sm:py-14 lg:py-16">
+      <div className="mb-8 rounded-[2.2rem] border border-[#e1dacd] bg-[#f7f3eb] px-6 py-8 shadow-[0_18px_50px_rgba(29,39,29,0.05)] sm:px-8 lg:px-10">
         <p className="text-xs font-semibold uppercase tracking-[0.28em] text-forest/70">
           Checkout
         </p>
-        <h1 className="display-font mt-3 text-5xl font-semibold tracking-tight text-ink sm:text-6xl">
+        <h1 className="display-font mt-3 max-w-3xl text-4xl font-semibold tracking-tight text-ink sm:text-5xl lg:text-6xl">
           Complete your order
         </h1>
-        <p className="mt-4 max-w-xl text-base leading-7 text-muted">
+        <p className="mt-4 max-w-2xl text-base leading-7 text-muted">
           Each item is printed after ordering. Please allow a short production window before
           shipment.
         </p>
       </div>
 
-      <div className="grid gap-8 lg:grid-cols-[1.2fr_0.8fr] lg:items-start">
-        <div className="space-y-8">
-          <div className="card-surface p-6">
-            <h2 className="display-font text-3xl font-semibold text-ink">Billing details</h2>
-            <div className="mt-6 grid gap-5 sm:grid-cols-2">
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_25rem] xl:items-start">
+        <div className="space-y-6">
+          <div className={`${checkoutCardClassName} p-6 sm:p-8`}>
+            <p className={sectionEyebrowClassName}>Contact and delivery</p>
+            <h2 className="display-font mt-3 text-3xl font-semibold text-ink sm:text-[2rem]">
+              Billing details
+            </h2>
+            <div className="mt-7 grid gap-5 sm:grid-cols-2">
               <label className="grid gap-2 text-sm font-semibold text-ink sm:col-span-2">
                 Full Name *
                 <Input
                   value={form.billing.full_name}
-                  className={fieldErrors.full_name ? "border-[#b55245]" : ""}
+                  className={`${checkoutFieldClassName} ${
+                    fieldErrors.full_name ? checkoutFieldErrorClassName : ""
+                  }`}
                   onChange={(event) =>
                     setForm((current) => ({
                       ...current,
@@ -696,7 +716,9 @@ export function CheckoutPageClient({
                 <Input
                   value={form.billing.email}
                   type="email"
-                  className={fieldErrors.email ? "border-[#b55245]" : ""}
+                  className={`${checkoutFieldClassName} ${
+                    fieldErrors.email ? checkoutFieldErrorClassName : ""
+                  }`}
                   onChange={(event) =>
                     setForm((current) => ({
                       ...current,
@@ -712,6 +734,7 @@ export function CheckoutPageClient({
                 Phone (Optional)
                 <Input
                   value={form.billing.phone}
+                  className={checkoutFieldClassName}
                   onChange={(event) =>
                     setForm((current) => ({
                       ...current,
@@ -724,7 +747,9 @@ export function CheckoutPageClient({
                 Address *
                 <Input
                   value={form.billing.address_1}
-                  className={fieldErrors.address_1 ? "border-[#b55245]" : ""}
+                  className={`${checkoutFieldClassName} ${
+                    fieldErrors.address_1 ? checkoutFieldErrorClassName : ""
+                  }`}
                   onChange={(event) =>
                     setForm((current) => ({
                       ...current,
@@ -740,7 +765,9 @@ export function CheckoutPageClient({
                 Apartment / Suite / Unit *
                 <Input
                   value={form.billing.address_2}
-                  className={fieldErrors.address_2 ? "border-[#b55245]" : ""}
+                  className={`${checkoutFieldClassName} ${
+                    fieldErrors.address_2 ? checkoutFieldErrorClassName : ""
+                  }`}
                   onChange={(event) =>
                     setForm((current) => ({
                       ...current,
@@ -756,7 +783,9 @@ export function CheckoutPageClient({
                 Country *
                 <Input
                   value={form.billing.country}
-                  className={fieldErrors.country ? "border-[#b55245]" : ""}
+                  className={`${checkoutFieldClassName} ${
+                    fieldErrors.country ? checkoutFieldErrorClassName : ""
+                  }`}
                   onChange={(event) =>
                     setForm((current) => ({
                       ...current,
@@ -772,7 +801,9 @@ export function CheckoutPageClient({
                 State *
                 <Input
                   value={form.billing.state}
-                  className={fieldErrors.state ? "border-[#b55245]" : ""}
+                  className={`${checkoutFieldClassName} ${
+                    fieldErrors.state ? checkoutFieldErrorClassName : ""
+                  }`}
                   onChange={(event) =>
                     setForm((current) => ({
                       ...current,
@@ -788,7 +819,9 @@ export function CheckoutPageClient({
                 City *
                 <Input
                   value={form.billing.city}
-                  className={fieldErrors.city ? "border-[#b55245]" : ""}
+                  className={`${checkoutFieldClassName} ${
+                    fieldErrors.city ? checkoutFieldErrorClassName : ""
+                  }`}
                   onChange={(event) =>
                     setForm((current) => ({
                       ...current,
@@ -804,6 +837,7 @@ export function CheckoutPageClient({
                 Postal Code / ZIP (Optional)
                 <Input
                   value={form.billing.postcode}
+                  className={checkoutFieldClassName}
                   onChange={(event) =>
                     setForm((current) => ({
                       ...current,
@@ -815,20 +849,23 @@ export function CheckoutPageClient({
             </div>
           </div>
 
-          <div className="card-surface p-6">
-            <h2 className="display-font text-3xl font-semibold text-ink">Payment</h2>
-            <div className="mt-3 rounded-[1.4rem] bg-sand px-4 py-3 text-sm leading-7 text-muted">
-              Your payment is processed securely through WooPayments on this page.
+          <div className={`${checkoutCardClassName} p-6 sm:p-8`}>
+            <p className={sectionEyebrowClassName}>Payment</p>
+            <h2 className="display-font mt-3 text-3xl font-semibold text-ink sm:text-[2rem]">
+              Secure payment
+            </h2>
+            <div className="mt-5 rounded-[1.3rem] border border-[#dfd7ca] bg-[#f7f3eb] px-4 py-3 text-sm leading-7 text-muted">
+              Your card details stay securely on this page with WooPayments.
             </div>
             <div className="mt-6 space-y-3">
               {availablePaymentMethods.length ? (
                 availablePaymentMethods.map((method) => (
                   <label
                     key={method}
-                    className={`block rounded-[1.4rem] border p-4 ${
+                    className={`block rounded-[1.45rem] border px-4 py-4 ${
                       activePaymentMethod === method
-                        ? "border-forest bg-forest/5"
-                        : "border-border bg-white/70"
+                        ? "border-forest/50 bg-[#f3f8f0] shadow-[0_12px_24px_rgba(47,87,37,0.08)]"
+                        : "border-[#e1dacd] bg-[#fcfbf8]"
                     }`}
                   >
                     <input
@@ -843,11 +880,22 @@ export function CheckoutPageClient({
                         setFeedback(null);
                       }}
                     />
-                    <span className="block text-sm font-semibold text-ink">
-                      {formatPaymentMethodLabel(method)}
-                    </span>
-                    <span className="mt-1 block text-sm leading-7 text-muted">
-                      {describePaymentMethod(method)}
+                    <span className="flex items-start gap-3">
+                      <span
+                        className={`mt-0.5 inline-flex h-4 w-4 flex-none rounded-full border ${
+                          activePaymentMethod === method
+                            ? "border-forest bg-forest shadow-[inset_0_0_0_4px_#f3f8f0]"
+                            : "border-[#bbb2a3] bg-white"
+                        }`}
+                      />
+                      <span>
+                        <span className="block text-sm font-semibold text-ink">
+                          {formatPaymentMethodLabel(method)}
+                        </span>
+                        <span className="mt-1 block text-sm leading-6 text-muted">
+                          {describePaymentMethod(method)}
+                        </span>
+                      </span>
                     </span>
                   </label>
                 ))
@@ -868,6 +916,7 @@ export function CheckoutPageClient({
               Order Note
               <Textarea
                 value={form.customerNote}
+                className="rounded-[1.25rem] border-[#d9d3c7] bg-[#fcfaf6] px-4 py-3 text-[0.95rem] focus:border-forest/45 focus:ring-4 focus:ring-forest/8"
                 onChange={(event) =>
                   setForm((current) => ({ ...current, customerNote: event.target.value }))
                 }
@@ -875,22 +924,31 @@ export function CheckoutPageClient({
               />
             </label>
             {feedback ? (
-              <p
+              <div
+                aria-live="polite"
                 className={`mt-4 text-sm ${
-                  feedback.tone === "error" ? "text-[#b55245]" : "text-forest"
+                  feedback.tone === "error"
+                    ? "rounded-[1.2rem] border border-[#b55245]/25 bg-[#b55245]/6 px-4 py-3 text-[#8f3a31]"
+                    : "rounded-[1.2rem] border border-forest/15 bg-forest/6 px-4 py-3 text-forest"
                 }`}
               >
                 {feedback.text}
-              </p>
+              </div>
             ) : null}
           </div>
         </div>
 
-        <aside className="card-surface h-fit p-6 lg:sticky lg:top-24">
-          <h2 className="display-font text-3xl font-semibold text-ink">Order summary</h2>
+        <aside
+          className="h-fit rounded-[1.85rem] border border-[#ddd6c8] bg-[#f7f3eb] p-6 shadow-[0_26px_60px_rgba(29,39,29,0.06)] lg:sticky lg:top-24 lg:p-7"
+        >
+          <p className={sectionEyebrowClassName}>Review</p>
+          <h2 className="display-font mt-3 text-3xl font-semibold text-ink">Order summary</h2>
           <div className="mt-6 space-y-4">
             {items.map((item) => (
-              <div key={item.key} className="flex items-start justify-between gap-4 text-sm">
+              <div
+                key={item.key}
+                className="flex items-start justify-between gap-4 rounded-[1.25rem] bg-white/80 px-4 py-4 text-sm"
+              >
                 <div>
                   <p className="font-semibold text-ink">
                     {item.name} x {item.quantity}
@@ -906,7 +964,7 @@ export function CheckoutPageClient({
                 </p>
               </div>
             ))}
-            <div className="border-t border-border pt-4 text-sm text-muted">
+            <div className="rounded-[1.35rem] border border-[#ded7ca] bg-white/70 px-4 py-4 text-sm text-muted">
               <div className="flex items-center justify-between">
                 <span>Subtotal</span>
                 <span>{formatPriceFromCents(subtotalCents)}</span>
@@ -920,7 +978,12 @@ export function CheckoutPageClient({
                 <span>{formatPriceFromCents(totalCents)}</span>
               </div>
             </div>
-            <Button type="button" className="mt-2 w-full" disabled={disabled} onClick={submit}>
+            <Button
+              type="button"
+              className="mt-2 h-14 w-full rounded-[1.2rem] text-[0.96rem] shadow-[0_18px_34px_rgba(47,87,37,0.18)]"
+              disabled={disabled}
+              onClick={submit}
+            >
               {submitPhase === "confirming"
                 ? "Confirming payment..."
                 : submitPhase === "submitting"
@@ -929,6 +992,10 @@ export function CheckoutPageClient({
                   ? "Place order"
                   : "Complete payment details"}
             </Button>
+            <p className="text-center text-xs leading-6 text-[#857c6f]">
+              By placing your order, you confirm your billing details and shipping information are
+              correct.
+            </p>
           </div>
         </aside>
       </div>

@@ -118,31 +118,67 @@ export function HeaderClient() {
       ) : null}
 
       {mobileOpen ? (
-        <div className="fixed inset-0 z-50 bg-ink/70 backdrop-blur-sm md:hidden">
-          <div className="ml-auto flex h-full w-full max-w-sm flex-col bg-ink p-5 text-white shadow-2xl shadow-black/25">
-            <div className="flex items-center justify-between">
-              <span className="display-font text-2xl font-semibold text-white">Menu</span>
+        <div className="fixed inset-0 z-50 bg-[#1a2d1e] md:hidden">
+          <div className="flex h-full w-full flex-col overflow-y-auto px-6 pb-8 pt-6 text-white">
+            <div className="flex items-start justify-between border-b border-white/10 pb-5">
+              <div className="space-y-3">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.32em] text-white/55">
+                  Navigation
+                </p>
+                <Link href="/" className="block py-1" onClick={() => setMobileOpen(false)}>
+                  <Image
+                    src="/branding/anfastyles-logo.png"
+                    alt="AnfaStyles"
+                    width={1100}
+                    height={367}
+                    priority
+                    className="h-10 w-auto brightness-0 invert"
+                  />
+                </Link>
+              </div>
               <button
                 type="button"
-                className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white"
+                className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-white text-ink shadow-[0_12px_30px_rgba(0,0,0,0.18)]"
                 onClick={() => setMobileOpen(false)}
                 aria-label="Close menu"
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
-            <nav className="mt-10 space-y-4">
+            <div className="mt-7 rounded-[1.8rem] border border-white/8 bg-white/6 px-5 py-5">
+              <p className="text-sm leading-7 text-white/72">
+                Thoughtful pieces, printed with calm intention and made to fit everyday rituals.
+              </p>
+            </div>
+            <nav className="mt-7 space-y-3">
               {NAV_LINKS.map((link) => (
                 <Link
                   key={link.href}
                   href={link.href}
-                  className="block rounded-2xl border border-white/10 bg-white/[0.08] px-5 py-4 text-lg font-semibold text-white"
+                  className={cn(
+                    "flex items-center justify-between rounded-[1.6rem] border px-5 py-4 text-base font-semibold shadow-[0_14px_34px_rgba(0,0,0,0.08)]",
+                    pathname === link.href || pathname.startsWith(`${link.href}/`)
+                      ? "border-white bg-white text-[#1a2d1e]"
+                      : "border-white/10 bg-white/[0.07] text-white hover:bg-white/[0.12]",
+                  )}
                   onClick={() => setMobileOpen(false)}
                 >
-                  {link.label}
+                  <span>{link.label}</span>
+                  <span className="text-sm opacity-60">/</span>
                 </Link>
               ))}
             </nav>
+            <div className="mt-auto pt-8">
+              <div className="rounded-[1.8rem] border border-white/8 bg-[#223827] px-5 py-5">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-white/45">
+                  AnfaStyles
+                </p>
+                <p className="mt-3 text-sm leading-7 text-white/72">
+                  Clean essentials, grounded tones, and a quieter shopping experience on every
+                  screen.
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       ) : null}
