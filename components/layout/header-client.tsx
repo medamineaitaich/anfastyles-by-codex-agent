@@ -26,100 +26,102 @@ export function HeaderClient() {
   }
 
   return (
-    <header className="fixed inset-x-0 top-0 z-50 border-b border-border bg-sand/95 backdrop-blur">
-      <div className="content-shell flex h-20 items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-border bg-white/70 md:hidden"
-            aria-label="Open menu"
-            onClick={() => setMobileOpen(true)}
-          >
-            <Menu className="h-5 w-5" />
-          </button>
-          <Link
-            href="/"
-            className="py-1"
-            aria-label="AnfaStyles home"
-          >
-            <Image
-              src="/branding/anfastyles-logo.png"
-              alt="AnfaStyles"
-              width={1100}
-              height={367}
-              priority
-              className="h-12 w-auto sm:h-14"
-            />
-          </Link>
-        </div>
-
-        <nav className="hidden items-center gap-8 text-base font-semibold md:flex">
-          {NAV_LINKS.map((link) => {
-            const active = pathname === link.href || pathname.startsWith(`${link.href}/`);
-            return (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={cn("relative text-muted hover:text-ink", active && "text-ink")}
-              >
-                {link.label}
-                {active ? (
-                  <span className="absolute inset-x-0 -bottom-2 h-[2px] rounded-full bg-forest" />
-                ) : null}
-              </Link>
-            );
-          })}
-        </nav>
-
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-border bg-white/70"
-            aria-label="Search products"
-            onClick={() => setSearchOpen((current) => !current)}
-          >
-            <Search className="h-5 w-5" />
-          </button>
-          <button
-            type="button"
-            className="relative inline-flex h-11 w-11 items-center justify-center rounded-full border border-border bg-white/70"
-            aria-label="Open cart"
-            onClick={openDrawer}
-          >
-            <ShoppingBag className="h-5 w-5" />
-            {totalItems > 0 ? (
-              <span className="absolute right-1 top-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-clay px-1 text-[11px] font-semibold text-white">
-                {totalItems}
-              </span>
-            ) : null}
-          </button>
-        </div>
-      </div>
-
-      {searchOpen ? (
-        <div className="border-t border-white/10 bg-ink/95 text-white shadow-2xl shadow-black/20">
-          <div className="content-shell py-4">
-            <form className="flex gap-3" onSubmit={handleSubmit}>
-              <input
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                className="h-12 flex-1 rounded-full border border-white/15 bg-white/10 px-5 text-white outline-none placeholder:text-white/60 focus:border-white/35"
-                placeholder="Search products, collections, composting gear..."
+    <>
+      <header className="fixed inset-x-0 top-0 z-50 border-b border-border bg-sand/95 backdrop-blur">
+        <div className="content-shell flex h-20 items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-border bg-white/70 md:hidden"
+              aria-label="Open menu"
+              onClick={() => setMobileOpen(true)}
+            >
+              <Menu className="h-5 w-5" />
+            </button>
+            <Link
+              href="/"
+              className="py-1"
+              aria-label="AnfaStyles home"
+            >
+              <Image
+                src="/branding/anfastyles-logo.png"
+                alt="AnfaStyles"
+                width={1100}
+                height={367}
+                priority
+                className="h-12 w-auto sm:h-14"
               />
-              <button
-                type="submit"
-                className="inline-flex h-12 items-center justify-center rounded-full bg-white px-6 text-sm font-semibold text-ink hover:bg-sand"
-              >
-                Search
-              </button>
-            </form>
+            </Link>
+          </div>
+
+          <nav className="hidden items-center gap-8 text-base font-semibold md:flex">
+            {NAV_LINKS.map((link) => {
+              const active = pathname === link.href || pathname.startsWith(`${link.href}/`);
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={cn("relative text-muted hover:text-ink", active && "text-ink")}
+                >
+                  {link.label}
+                  {active ? (
+                    <span className="absolute inset-x-0 -bottom-2 h-[2px] rounded-full bg-forest" />
+                  ) : null}
+                </Link>
+              );
+            })}
+          </nav>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-border bg-white/70"
+              aria-label="Search products"
+              onClick={() => setSearchOpen((current) => !current)}
+            >
+              <Search className="h-5 w-5" />
+            </button>
+            <button
+              type="button"
+              className="relative inline-flex h-11 w-11 items-center justify-center rounded-full border border-border bg-white/70"
+              aria-label="Open cart"
+              onClick={openDrawer}
+            >
+              <ShoppingBag className="h-5 w-5" />
+              {totalItems > 0 ? (
+                <span className="absolute right-1 top-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-clay px-1 text-[11px] font-semibold text-white">
+                  {totalItems}
+                </span>
+              ) : null}
+            </button>
           </div>
         </div>
-      ) : null}
+
+        {searchOpen ? (
+          <div className="border-t border-white/10 bg-ink/95 text-white shadow-2xl shadow-black/20">
+            <div className="content-shell py-4">
+              <form className="flex gap-3" onSubmit={handleSubmit}>
+                <input
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  className="h-12 flex-1 rounded-full border border-white/15 bg-white/10 px-5 text-white outline-none placeholder:text-white/60 focus:border-white/35"
+                  placeholder="Search products, collections, composting gear..."
+                />
+                <button
+                  type="submit"
+                  className="inline-flex h-12 items-center justify-center rounded-full bg-white px-6 text-sm font-semibold text-ink hover:bg-sand"
+                >
+                  Search
+                </button>
+              </form>
+            </div>
+          </div>
+        ) : null}
+      </header>
 
       {mobileOpen ? (
-        <div className="fixed inset-0 z-50 bg-[#1a2d1e] md:hidden">
-          <div className="content-shell flex h-full flex-col overflow-y-auto pb-8 pt-6 text-white">
+        <div className="fixed inset-0 z-[70] h-dvh bg-[#1a2d1e] md:hidden">
+          <div className="content-shell flex h-full min-h-dvh flex-col overflow-y-auto pb-8 pt-6 text-white">
             <div className="flex items-start justify-between border-b border-white/10 pb-5">
               <div className="space-y-3">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.32em] text-white/55">
@@ -182,6 +184,6 @@ export function HeaderClient() {
           </div>
         </div>
       ) : null}
-    </header>
+    </>
   );
 }
