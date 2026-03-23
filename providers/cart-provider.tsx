@@ -44,6 +44,9 @@ type CartApiError = Error & {
 const LEGACY_STORAGE_KEY = "anfastyles-cart";
 const CART_TOKEN_STORAGE_KEY = "anfastyles-cart-token";
 const CartContext = createContext<CartContextValue | null>(null);
+const isCheckoutDebug =
+  process.env.NODE_ENV !== "production" ||
+  process.env.NEXT_PUBLIC_CHECKOUT_DEBUG === "true";
 
 function buildCartKey(item: {
   productId: number;
@@ -129,9 +132,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
     if (nextToken) {
       window.localStorage.setItem(CART_TOKEN_STORAGE_KEY, nextToken);
-      console.info("[cart-provider] stored cart token", {
-        token: getTokenPreview(nextToken),
-      });
+      if (isCheckoutDebug) {
+        console.info("[cart-provider] stored cart token", {
+          token: getTokenPreview(nextToken),
+        });
+      }
       return;
     }
 
@@ -200,10 +205,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    console.info("[cart-provider] syncing legacy cart items", {
-      count: legacyItems.length,
-      token: getTokenPreview(tokenOverride ?? cartTokenRef.current),
-    });
+    if (isCheckoutDebug) {
+      console.info("[cart-provider] syncing legacy cart items", {
+        count: legacyItems.length,
+        token: getTokenPreview(tokenOverride ?? cartTokenRef.current),
+      });
+    }
 
     for (const item of legacyItems) {
       const remoteCart = await requestCart(
@@ -305,6 +312,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!isReady) {
+      return;
+    }
+
+    if (!isCheckoutDebug) {
       return;
     }
 

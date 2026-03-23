@@ -7,7 +7,6 @@ import {
   INITIAL_CHECKOUT_PAYMENT_COLLECTOR,
   INITIAL_WOOPAYMENTS_CONFIG_STATE,
   type CheckoutBillingDetails,
-  type CheckoutPaymentDataContract,
   type CheckoutPaymentDataEntry,
   type CheckoutPaymentCollector,
   type CheckoutPaymentState,
@@ -22,6 +21,9 @@ import { WooPaymentsInlinePaymentSection } from "@/components/checkout/woopaymen
 import { useCart } from "@/providers/cart-provider";
 
 type FieldErrors = Partial<Record<keyof CheckoutBillingDetails, string>>;
+const isCheckoutDebug =
+  process.env.NODE_ENV !== "production" ||
+  process.env.NEXT_PUBLIC_CHECKOUT_DEBUG === "true";
 
 function formatPaymentMethodLabel(method: string) {
   if (method === "woocommerce_payments") {
@@ -37,14 +39,14 @@ function formatPaymentMethodLabel(method: string) {
 
 function describePaymentMethod(method: string) {
   if (method === "woocommerce_payments") {
-    return "WooPayments is available from WooCommerce Store API. Secure card entry stays inline on this checkout page.";
+    return "Pay securely with your card without leaving this checkout page.";
   }
 
   if (method === "stripe") {
-    return "Stripe is exposed by the Store API for this cart. Payment details still need an inline field integration before final submission.";
+    return "This payment option is temporarily unavailable while secure card fields are being prepared.";
   }
 
-  return "This payment method is coming from WooCommerce Store API for the current cart.";
+  return "This payment method is available for your current cart.";
 }
 
 export function CheckoutPageClient({
@@ -66,12 +68,9 @@ export function CheckoutPageClient({
   const [paymentMethod, setPaymentMethod] = useState("");
   const [paymentData, setPaymentData] = useState<CheckoutPaymentDataEntry[]>([]);
   const [message, setMessage] = useState<string | null>(null);
-  const [draftMessage, setDraftMessage] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [checkoutDraft, setCheckoutDraft] = useState<WooStoreCheckout | null>(null);
-  const [paymentDataContract, setPaymentDataContract] =
-    useState<CheckoutPaymentDataContract | null>(null);
   const [wooPaymentsConfigState, setWooPaymentsConfigState] =
     useState<WooPaymentsConfigFetchState>(INITIAL_WOOPAYMENTS_CONFIG_STATE);
   const [paymentCollector, setPaymentCollector] = useState<CheckoutPaymentCollector>(
@@ -110,6 +109,10 @@ export function CheckoutPageClient({
       : getDefaultPaymentMethod(availablePaymentMethods);
 
   useEffect(() => {
+    if (!isCheckoutDebug) {
+      return;
+    }
+
     console.info("[checkout-page] payment methods raw response", {
       cartPaymentMethods: paymentMethods,
       checkoutDraftPaymentMethod,
@@ -119,6 +122,10 @@ export function CheckoutPageClient({
   }, [availablePaymentMethods, cartToken, checkoutDraftPaymentMethod, paymentMethods]);
 
   useEffect(() => {
+    if (!isCheckoutDebug) {
+      return;
+    }
+
     console.info("[checkout-page] selected payment method", {
       selectedPaymentMethodState: paymentMethod || null,
       activePaymentMethod,
@@ -139,7 +146,7 @@ export function CheckoutPageClient({
         return {
           method: activePaymentMethod,
           status: "requires_backend",
-          message: "Loading WooPayments client config from the backend.",
+          message: "Preparing secure payment fields.",
           paymentData,
         };
       }
@@ -150,7 +157,7 @@ export function CheckoutPageClient({
           status: "error",
           message:
             wooPaymentsConfigState.error ??
-            "Unable to load the WooPayments client config required for inline checkout.",
+            "We could not load secure card fields right now. Please refresh the page and try again.",
           paymentData,
         };
       }
@@ -159,9 +166,7 @@ export function CheckoutPageClient({
         return {
           method: activePaymentMethod,
           status: "requires_backend",
-          message:
-            wooPaymentsConfigState.data?.message ??
-            "WooPayments config is not ready for the official SDK mount yet.",
+          message: "Secure payment fields are not ready yet. Please try again in a moment.",
           paymentData,
         };
       }
@@ -172,7 +177,7 @@ export function CheckoutPageClient({
           status: "error",
           message:
             paymentCollector.message ??
-            "WooPayments card details are invalid. Please review the secure fields and try again.",
+            "Please review your card details and try again.",
           paymentData,
         };
       }
@@ -181,9 +186,9 @@ export function CheckoutPageClient({
         method: activePaymentMethod,
         status: paymentCollector.canSubmit ? "ready" : "placeholder",
         message: paymentCollector.canSubmit
-          ? "WooPayments card details are ready. A Stripe PaymentMethod will be created on submit."
+          ? "Your card details are ready."
           : paymentCollector.message ??
-            "Complete the secure WooPayments card fields to continue.",
+            "Complete your card details to continue.",
         paymentData,
       };
     }
@@ -192,8 +197,8 @@ export function CheckoutPageClient({
       method: activePaymentMethod,
       status: paymentData.length ? "ready" : "requires_backend",
       message: paymentData.length
-        ? `${activePaymentMethod} payment data is ready.`
-        : `${activePaymentMethod} is selected, but its inline payment collector is not wired yet.`,
+        ? `${formatPaymentMethodLabel(activePaymentMethod)} is ready.`
+        : `${formatPaymentMethodLabel(activePaymentMethod)} is not available for checkout yet.`,
       paymentData,
     };
   }, [activePaymentMethod, paymentCollector, paymentData, wooPaymentsConfigState]);
@@ -207,8 +212,6 @@ export function CheckoutPageClient({
     [activePaymentMethod, isSyncing, items.length, paymentState.status, pending],
   );
   const canLoadDraft = isReady && Boolean(cartToken) && items.length > 0;
-  const activeCheckoutDraft = canLoadDraft ? checkoutDraft : null;
-  const activeDraftMessage = canLoadDraft ? draftMessage : null;
 
   useEffect(() => {
     if (!canLoadDraft || !cartToken) {
@@ -229,7 +232,6 @@ export function CheckoutPageClient({
         const payload = (await response.json()) as {
           message?: string;
           checkout?: WooStoreCheckout;
-          paymentDataContract?: CheckoutPaymentDataContract;
         };
 
         if (isCancelled) {
@@ -238,27 +240,27 @@ export function CheckoutPageClient({
 
         if (!response.ok || !payload.checkout) {
           setCheckoutDraft(null);
-          setDraftMessage(payload.message ?? "Unable to load the Store API checkout draft.");
-          setPaymentDataContract(payload.paymentDataContract ?? null);
+          if (isCheckoutDebug) {
+            console.warn("[checkout-page] unable to load checkout draft", payload.message);
+          }
           return;
         }
 
-        console.info("[checkout-page] loaded Store API draft", {
-          orderId: payload.checkout.order_id,
-          status: payload.checkout.status,
-          paymentMethod: payload.checkout.payment_method,
-        });
+        if (isCheckoutDebug) {
+          console.info("[checkout-page] loaded Store API draft", {
+            orderId: payload.checkout.order_id,
+            status: payload.checkout.status,
+            paymentMethod: payload.checkout.payment_method,
+          });
+        }
 
         setCheckoutDraft(payload.checkout);
-        setPaymentDataContract(payload.paymentDataContract ?? null);
-        setDraftMessage(
-          `Store API draft #${payload.checkout.order_number} is ready with status ${payload.checkout.status}.`,
-        );
       } catch (error) {
         if (!isCancelled) {
-          console.error("[checkout-page] failed to load Store API draft", error);
+          if (isCheckoutDebug) {
+            console.error("[checkout-page] failed to load Store API draft", error);
+          }
           setCheckoutDraft(null);
-          setDraftMessage("Unable to load the Store API checkout draft.");
         }
       }
     })();
@@ -312,17 +314,17 @@ export function CheckoutPageClient({
     }
 
     if (!cartToken) {
-      setMessage("Cart token is missing. Refresh the cart and try again.");
+      setMessage("Your cart session expired. Please refresh the page and try again.");
       return;
     }
 
     if (!activePaymentMethod) {
-      setMessage("No Store API payment method is available yet for this cart.");
+      setMessage("No payment method is available for your cart right now.");
       return;
     }
 
     if (paymentState.status !== "ready") {
-      setMessage(paymentState.message ?? "Payment details are not ready yet.");
+      setMessage(paymentState.message ?? "Please complete your payment details to continue.");
       return;
     }
 
@@ -332,7 +334,7 @@ export function CheckoutPageClient({
     if (activePaymentMethod === "woocommerce_payments") {
       if (!paymentCollector.collectPaymentData) {
         setPending(false);
-        setMessage("WooPayments secure fields are not ready yet.");
+        setMessage("Secure card fields are still loading. Please wait a moment and try again.");
         return;
       }
 
@@ -340,7 +342,7 @@ export function CheckoutPageClient({
 
       if (!collection.ok) {
         setPending(false);
-        setMessage(collection.message ?? "Unable to create the WooPayments payment method.");
+        setMessage(collection.message ?? "We could not verify your card details. Please try again.");
         return;
       }
 
@@ -366,8 +368,6 @@ export function CheckoutPageClient({
       orderId?: number;
       orderNumber?: string;
       fieldErrors?: Record<string, string>;
-      requiresPaymentData?: boolean;
-      paymentDataContract?: CheckoutPaymentDataContract;
       wooPaymentsConfig?: WooPaymentsConfigResponse;
       paymentResult?: WooStoreCheckout["payment_result"];
     };
@@ -375,7 +375,6 @@ export function CheckoutPageClient({
     setPending(false);
 
     if (!response.ok || !payload.orderId || !payload.orderNumber) {
-      setPaymentDataContract(payload.paymentDataContract ?? paymentDataContract);
       if (payload.wooPaymentsConfig) {
         setWooPaymentsConfigState({
           status: "success",
@@ -391,7 +390,7 @@ export function CheckoutPageClient({
       );
 
       setFieldErrors((current) => ({ ...current, ...apiFieldErrors }));
-      setMessage(payload.message ?? "Unable to place the order.");
+      setMessage(payload.message ?? "We could not place your order. Please review your details and try again.");
       return;
     }
 
@@ -399,14 +398,16 @@ export function CheckoutPageClient({
       activePaymentMethod === "woocommerce_payments" &&
       payload.paymentResult?.redirect_url
     ) {
-      console.info("[checkout-page] WooPayments confirmation required", {
-        redirectUrl: payload.paymentResult.redirect_url,
-      });
+      if (isCheckoutDebug) {
+        console.info("[checkout-page] WooPayments confirmation required", {
+          redirectUrl: payload.paymentResult.redirect_url,
+        });
+      }
 
       // TODO: parse payment_result.redirect_url and run the WooPayments/Stripe intent confirmation
       // step in-page without falling back to a full redirect.
       setMessage(
-        "WooPayments returned a confirmation step. The next step is in-page intent confirmation from payment_result.redirect_url.",
+        "Your payment needs one more confirmation step before we can finish the order.",
       );
       return;
     }
@@ -606,9 +607,7 @@ export function CheckoutPageClient({
           <div className="card-surface p-6">
             <h2 className="display-font text-3xl font-semibold text-ink">Payment</h2>
             <div className="mt-3 rounded-[1.4rem] bg-sand px-4 py-3 text-sm leading-7 text-muted">
-              The final checkout now runs through WooCommerce Store API and uses the live cart token.
-              WooPayments secure card entry now mounts inline and creates payment data at submit
-              time.
+              Your payment is processed securely through WooPayments on this page.
             </div>
             <div className="mt-6 space-y-3">
               {availablePaymentMethods.length ? (
@@ -643,7 +642,7 @@ export function CheckoutPageClient({
                 ))
               ) : (
                 <div className="rounded-[1.4rem] border border-[#b55245]/30 bg-[#b55245]/5 p-4 text-sm text-[#7d3028]">
-                  No payment methods were returned by WooCommerce Store API for this cart yet.
+                  No payment methods are available for your cart right now.
                 </div>
               )}
             </div>
@@ -654,15 +653,6 @@ export function CheckoutPageClient({
               onConfigStateChange={setWooPaymentsConfigState}
               onCollectorChange={setPaymentCollector}
             />
-            {paymentDataContract ? (
-              <div className="mt-6 rounded-[1.4rem] border border-border bg-white px-4 py-4">
-                <p className="text-sm font-semibold text-ink">Current payment data contract</p>
-                <div className="mt-3 space-y-2 text-sm leading-7 text-muted">
-                  <p>{paymentDataContract.shape}</p>
-                  <p>{paymentDataContract.serialization}</p>
-                </div>
-              </div>
-            ) : null}
             <label className="mt-6 grid gap-2 text-sm font-semibold text-ink">
               Order Note
               <Textarea
@@ -673,9 +663,6 @@ export function CheckoutPageClient({
                 placeholder="Delivery notes, gate code, or support details."
               />
             </label>
-            {activeDraftMessage ? (
-              <p className="mt-4 text-sm text-muted">{activeDraftMessage}</p>
-            ) : null}
             {message ? <p className="mt-4 text-sm text-[#b55245]">{message}</p> : null}
           </div>
         </div>
@@ -714,18 +701,12 @@ export function CheckoutPageClient({
                 <span>{formatPriceFromCents(totalCents)}</span>
               </div>
             </div>
-            {activeCheckoutDraft ? (
-              <div className="rounded-[1.4rem] bg-sand px-4 py-3 text-sm text-muted">
-                Draft order #{activeCheckoutDraft.order_number} is loaded through Store API with
-                status {activeCheckoutDraft.status}.
-              </div>
-            ) : null}
             <Button type="button" className="mt-2 w-full" disabled={disabled} onClick={submit}>
               {pending
-                ? "Submitting checkout..."
+                ? "Processing payment..."
                 : paymentState.status === "ready"
                   ? "Place order"
-                  : "Payment fields required"}
+                  : "Complete payment details"}
             </Button>
           </div>
         </aside>

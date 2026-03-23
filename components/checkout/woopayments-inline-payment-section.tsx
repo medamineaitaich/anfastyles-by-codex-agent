@@ -2,9 +2,7 @@
 
 import { useEffect, useState } from "react";
 import {
-  CHECKOUT_PAYMENT_DATA_CONTRACT,
   INITIAL_WOOPAYMENTS_CONFIG_STATE,
-  WOOPAYMENTS_BACKEND_REQUIREMENTS,
   type CheckoutBillingDetails,
   type CheckoutPaymentCollector,
   type CheckoutPaymentState,
@@ -12,6 +10,9 @@ import {
   type WooPaymentsConfigResponse,
 } from "@/lib/checkout/payment";
 import { WooPaymentsPaymentElement } from "@/components/checkout/woopayments-payment-element";
+const isCheckoutDebug =
+  process.env.NODE_ENV !== "production" ||
+  process.env.NEXT_PUBLIC_CHECKOUT_DEBUG === "true";
 
 export function WooPaymentsInlinePaymentSection({
   paymentState,
@@ -48,7 +49,7 @@ export function WooPaymentsInlinePaymentSection({
       const nextState: WooPaymentsConfigFetchState = {
         status: "error",
         data: null,
-        error: "Cart token is missing, so WooPayments config cannot be requested yet.",
+        error: "Your cart session expired. Please refresh the page and try again.",
       };
 
       setConfigState(nextState);
@@ -74,7 +75,7 @@ export function WooPaymentsInlinePaymentSection({
     onCollectorChange?.({
       status: "mounting",
       canSubmit: false,
-      message: "Loading WooPayments client config from the backend.",
+      message: "Loading secure payment fields.",
       collectPaymentData: null,
     });
 
@@ -131,6 +132,10 @@ export function WooPaymentsInlinePaymentSection({
       return;
     }
 
+    if (!isCheckoutDebug) {
+      return;
+    }
+
     console.info("[checkout-page] woopayments config fetch result", {
       status: configState.status,
       isReady: configState.data?.isReady ?? false,
@@ -140,17 +145,14 @@ export function WooPaymentsInlinePaymentSection({
   }, [configState, isActive]);
 
   const config = configState.data?.config ?? null;
-  const configSnapshot = configState.data?.configSnapshot ?? null;
-  const missingRequirements =
-    configState.data?.missingRequirements.length
-      ? configState.data.missingRequirements
-      : WOOPAYMENTS_BACKEND_REQUIREMENTS.filter(
-          (requirement) => requirement.id !== "server_validation_contract",
-        );
   const canMountSdk = Boolean(configState.data?.isReady && config);
 
   useEffect(() => {
     if (!isActive) {
+      return;
+    }
+
+    if (!isCheckoutDebug) {
       return;
     }
 
@@ -163,14 +165,7 @@ export function WooPaymentsInlinePaymentSection({
   }, [canMountSdk, configState.data?.isReady, isActive, paymentState.method]);
 
   if (!isActive) {
-    return (
-      <div className="mt-6 rounded-[1.4rem] border border-border bg-white/70 p-4">
-        <p className="text-sm font-semibold text-ink">Inline payment container</p>
-        <p className="mt-2 text-sm leading-7 text-muted">
-          Select WooPayments to mount the real secure card fields inside this section.
-        </p>
-      </div>
-    );
+    return null;
   }
 
   return (
@@ -179,13 +174,9 @@ export function WooPaymentsInlinePaymentSection({
         <p className="text-xs font-semibold uppercase tracking-[0.24em] text-forest/70">
           WooPayments Inline
         </p>
-        <h3 className="mt-2 text-xl font-semibold text-ink">
-          Secure card fields will mount here
-        </h3>
+        <h3 className="mt-2 text-xl font-semibold text-ink">Secure card payment</h3>
         <p className="mt-2 text-sm leading-7 text-muted">
-          This is a real integration container, not a fake card form. The next step is wiring the
-          official WooPayments payment element so it can create a Stripe PaymentMethod and turn it
-          into `payment_data` for Store API checkout.
+          Enter your card details below to pay securely without leaving this page.
         </p>
       </div>
 
@@ -201,20 +192,16 @@ export function WooPaymentsInlinePaymentSection({
         }`}
       >
         {configState.status === "loading"
-          ? "Loading WooPayments client config from the backend."
+          ? "Loading secure payment fields."
           : configState.status === "error"
-            ? configState.error
-            : configState.data?.message ??
-              "WooPayments config is waiting for the remaining backend fields."}
+            ? "Secure payment fields are unavailable right now. Please refresh the page and try again."
+            : canMountSdk
+              ? "Your card details stay secure and encrypted."
+              : "Secure payment fields are not ready right now. Please try again in a moment."}
       </div>
 
       <div className="rounded-[1.4rem] border border-dashed border-forest/40 bg-cream px-5 py-6">
-        <p className="text-sm font-semibold text-ink">Card element mount point</p>
-        <p className="mt-2 text-sm leading-7 text-muted">
-          {canMountSdk
-            ? "The official WooPayments SDK can mount secure card fields, validation, and confirmation UI inside this container."
-            : "The official WooPayments SDK will mount here once the backend provides the remaining WooPayments mount config fields."}
-        </p>
+        <p className="text-sm font-semibold text-ink">Card details</p>
         <div className="mt-4 min-h-24 rounded-[1rem] border border-dashed border-border bg-white/90 p-3">
           {canMountSdk && config ? (
             <WooPaymentsPaymentElement
@@ -229,166 +216,6 @@ export function WooPaymentsInlinePaymentSection({
             />
           )}
         </div>
-      </div>
-
-      <div className="grid gap-4 lg:grid-cols-2">
-        <div className="rounded-[1.3rem] bg-sand px-4 py-4">
-          <p className="text-sm font-semibold text-ink">Current state</p>
-          <div className="mt-3 space-y-2 text-sm text-muted">
-            <p>
-              Selected method: <span className="font-medium text-ink">WooPayments</span>
-            </p>
-            <p>
-              Payment data status:{" "}
-              <span className="font-medium text-ink">{paymentState.status}</span>
-            </p>
-            <p>
-              Config fetch state:{" "}
-              <span className="font-medium text-ink">{configState.status}</span>
-            </p>
-            <p>
-              Mount ready:{" "}
-              <span className="font-medium text-ink">{canMountSdk ? "yes" : "not yet"}</span>
-            </p>
-            <p>{paymentState.message ?? "Waiting for WooPayments fields to provide payment data."}</p>
-          </div>
-        </div>
-
-        <div className="rounded-[1.3rem] bg-sand px-4 py-4">
-          <p className="text-sm font-semibold text-ink">`payment_data` contract</p>
-          <div className="mt-3 space-y-2 text-sm text-muted">
-            <p>{CHECKOUT_PAYMENT_DATA_CONTRACT.shape}</p>
-            <p>{CHECKOUT_PAYMENT_DATA_CONTRACT.serialization}</p>
-            <p>
-              Captured entries:{" "}
-              <span className="font-medium text-ink">{paymentState.paymentData.length}</span>
-            </p>
-            <p>
-              Next adapter:{" "}
-              <span className="font-medium text-ink">
-                Stripe PaymentMethod result -&gt; WooPayments `payment_data`
-              </span>
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <div className="rounded-[1.4rem] border border-border bg-white px-4 py-4">
-        <p className="text-sm font-semibold text-ink">Backend data still needed</p>
-        {missingRequirements.length ? (
-          <div className="mt-3 grid gap-3">
-            {missingRequirements.map((requirement) => (
-              <div key={requirement.id} className="rounded-[1rem] bg-sand px-3 py-3 text-sm">
-                <p className="font-semibold text-ink">{requirement.label}</p>
-                <p className="mt-1 leading-7 text-muted">{requirement.reason}</p>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="mt-3 text-sm leading-7 text-muted">
-            All current WooPayments mount requirements are available from the backend.
-          </p>
-        )}
-      </div>
-
-      <div className="rounded-[1.4rem] border border-border bg-white px-4 py-4">
-        <p className="text-sm font-semibold text-ink">Client config status</p>
-        {configSnapshot ? (
-          <div className="mt-3 space-y-2 text-sm text-muted">
-            <p>
-              Source: <span className="font-medium text-ink">{configState.data?.source}</span>
-            </p>
-            <p>
-              Publishable key:{" "}
-              <span className="font-medium text-ink">
-                {configSnapshot.publishableKey ? "available" : "missing"}
-              </span>
-            </p>
-            <p>
-              Account ID:{" "}
-              <span className="font-medium text-ink">
-                {configSnapshot.accountId ?? "missing"}
-              </span>
-            </p>
-            <p>
-              Currency:{" "}
-              <span className="font-medium text-ink">
-                {configSnapshot.currency ?? "missing"}
-              </span>
-            </p>
-            <p>
-              Locale: <span className="font-medium text-ink">{configSnapshot.locale}</span>
-            </p>
-            <p>
-              Cart total:{" "}
-              <span className="font-medium text-ink">
-                {configSnapshot.cartTotal ?? "missing"}
-              </span>
-            </p>
-            <p>
-              Payment methods config:{" "}
-              <span className="font-medium text-ink">
-                {configSnapshot.paymentMethodsConfig ? "available" : "missing"}
-              </span>
-            </p>
-            <p>
-              Detected payment method types:{" "}
-              <span className="font-medium text-ink">
-                {configSnapshot.detectedPaymentMethodTypes.join(", ") || "none"}
-              </span>
-            </p>
-            <p>
-              Force network saved cards:{" "}
-              <span className="font-medium text-ink">
-                {configSnapshot.forceNetworkSavedCards === null
-                  ? "missing"
-                  : configSnapshot.forceNetworkSavedCards
-                    ? "yes"
-                    : "no"}
-              </span>
-            </p>
-            <p>
-              Styles cache version:{" "}
-              <span className="font-medium text-ink">
-                {configSnapshot.stylesCacheVersion ?? "missing"}
-              </span>
-            </p>
-            <p>
-              Saved cards enabled:{" "}
-              <span className="font-medium text-ink">
-                {configSnapshot.isSavedCardsEnabled === null
-                  ? "missing"
-                  : configSnapshot.isSavedCardsEnabled
-                    ? "yes"
-                    : "no"}
-              </span>
-            </p>
-            <p>
-              Enabled billing fields:{" "}
-              <span className="font-medium text-ink">
-                {configSnapshot.enabledBillingFields
-                  ? Object.keys(configSnapshot.enabledBillingFields).join(", ")
-                  : "missing"}
-              </span>
-            </p>
-            <p>
-              Generic error message:{" "}
-              <span className="font-medium text-ink">
-                {configSnapshot.genericErrorMessage ? "available" : "missing"}
-              </span>
-            </p>
-            <p>
-              Test mode:{" "}
-              <span className="font-medium text-ink">
-                {configSnapshot.testMode ? "yes" : "no"}
-              </span>
-            </p>
-          </div>
-        ) : (
-          <p className="mt-3 text-sm leading-7 text-muted">
-            No WooPayments client config is being provided yet from the backend.
-          </p>
-        )}
       </div>
     </div>
   );

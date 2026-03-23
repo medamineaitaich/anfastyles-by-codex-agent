@@ -60,10 +60,10 @@ function withStoreHeaders(response: NextResponse, cartToken: string | null, nonc
 
 function formatPaymentRequiredMessage(paymentMethod: string) {
   if (paymentMethod === "woocommerce_payments") {
-    return "WooPayments is selected, but the secure card fields are incomplete. Complete the card details so checkout can create payment_data and finalize the order.";
+    return "Please complete your card details before placing the order.";
   }
 
-  return `Payment details are required before finalizing ${paymentMethod}. The Store API checkout flow is ready, but the inline payment fields still need to be connected.`;
+  return `Please complete the payment details for ${paymentMethod} before placing the order.`;
 }
 
 function extractStoreErrorMessage(error: WooStoreApiError) {
@@ -106,7 +106,7 @@ export async function GET(request: Request) {
   if (!cartToken) {
     return NextResponse.json(
       {
-        message: "Missing Cart-Token header.",
+        message: "Your cart session expired. Please refresh the page and try again.",
       },
       { status: 400 },
     );
@@ -146,7 +146,10 @@ export async function GET(request: Request) {
 
     return NextResponse.json(
       {
-        message: error instanceof Error ? error.message : "Unable to load checkout draft.",
+        message:
+          error instanceof Error
+            ? error.message
+            : "We could not prepare your checkout right now.",
       },
       { status: 400 },
     );
@@ -159,7 +162,7 @@ export async function POST(request: Request) {
   if (!cartToken) {
     return NextResponse.json(
       {
-        message: "Missing Cart-Token header.",
+        message: "Your cart session expired. Please refresh the page and try again.",
       },
       { status: 400 },
     );
@@ -277,7 +280,10 @@ export async function POST(request: Request) {
 
     return NextResponse.json(
       {
-        message: error instanceof Error ? error.message : "Unable to process checkout.",
+        message:
+          error instanceof Error
+            ? error.message
+            : "We could not process your checkout right now. Please try again.",
       },
       { status: 400 },
     );
