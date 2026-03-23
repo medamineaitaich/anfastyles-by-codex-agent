@@ -6,12 +6,7 @@ import {
   useElements,
   useStripe,
 } from "@stripe/react-stripe-js";
-import {
-  loadStripe,
-  type StripeConstructorOptions,
-  type StripeElementsOptions,
-  type StripeError,
-} from "@stripe/stripe-js";
+import { type StripeElementsOptions, type StripeError } from "@stripe/stripe-js";
 import { useEffect, useEffectEvent, useMemo, useState } from "react";
 import {
   INITIAL_CHECKOUT_PAYMENT_COLLECTOR,
@@ -21,62 +16,7 @@ import {
   type CheckoutPaymentCollector,
   type WooPaymentsMountConfig,
 } from "@/lib/checkout/payment";
-
-function normalizeStripeLocale(locale: string) {
-  const normalized = locale.replace("_", "-").toLowerCase();
-  const [language] = normalized.split("-");
-  const candidate = language || "en";
-  const supportedLocales = new Set<string>([
-    "auto",
-    "ar",
-    "bg",
-    "cs",
-    "da",
-    "de",
-    "el",
-    "en",
-    "en-AU",
-    "en-CA",
-    "en-GB",
-    "en-NZ",
-    "es",
-    "es-ES",
-    "es-419",
-    "et",
-    "fi",
-    "fil",
-    "fr",
-    "fr-CA",
-    "hr",
-    "hu",
-    "id",
-    "it",
-    "ja",
-    "ko",
-    "lt",
-    "lv",
-    "ms",
-    "mt",
-    "nb",
-    "nl",
-    "pl",
-    "pt",
-    "pt-BR",
-    "ro",
-    "ru",
-    "sk",
-    "sl",
-    "sv",
-    "th",
-    "tr",
-    "vi",
-    "zh",
-    "zh-HK",
-    "zh-TW",
-  ]);
-
-  return (supportedLocales.has(candidate) ? candidate : "en") as StripeConstructorOptions["locale"];
-}
+import { getWooPaymentsStripe } from "@/lib/checkout/woopayments-stripe";
 
 function buildBillingDetails(billing: CheckoutBillingDetails) {
   return {
@@ -275,12 +215,8 @@ export function WooPaymentsPaymentElement({
   onCollectorChange: (collector: CheckoutPaymentCollector) => void;
 }) {
   const stripePromise = useMemo(
-    () =>
-      loadStripe(config.publishableKey, {
-        stripeAccount: config.accountId,
-        locale: normalizeStripeLocale(config.locale),
-      }),
-    [config.accountId, config.locale, config.publishableKey],
+    () => getWooPaymentsStripe(config),
+    [config],
   );
 
   const elementsOptions = useMemo<StripeElementsOptions>(

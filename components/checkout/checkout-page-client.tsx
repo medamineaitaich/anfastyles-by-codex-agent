@@ -18,9 +18,28 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { formatPriceFromCents } from "@/lib/utils";
 import { WooPaymentsInlinePaymentSection } from "@/components/checkout/woopayments-inline-payment-section";
+import {
+  extractOrderKeyFromUrl,
+  getWooPaymentsConfirmationErrorMessage,
+  getWooPaymentsIntentId,
+  getWooPaymentsStripe,
+  parseWooPaymentsConfirmationRedirect,
+} from "@/lib/checkout/woopayments-stripe";
 import { useCart } from "@/providers/cart-provider";
 
 type FieldErrors = Partial<Record<keyof CheckoutBillingDetails, string>>;
+type CheckoutFeedback = {
+  tone: "error" | "info";
+  text: string;
+};
+type CheckoutSuccessState = {
+  orderId: number;
+  orderNumber: string;
+  orderKey: string | null;
+  redirectUrl: string | null;
+  paymentStatus: string | null;
+};
+type SubmitPhase = "idle" | "submitting" | "confirming";
 const isCheckoutDebug =
   process.env.NODE_ENV !== "production" ||
   process.env.NEXT_PUBLIC_CHECKOUT_DEBUG === "true";
@@ -49,6 +68,14 @@ function describePaymentMethod(method: string) {
   return "This payment method is available for your current cart.";
 }
 
+function getSuccessMessage(paymentStatus: string | null) {
+  if (paymentStatus === "pending") {
+    return "Your order is confirmed and your payment is being finalized. We will update you as soon as it completes.";
+  }
+
+  return "Your payment was received successfully and your order is now confirmed.";
+}
+
 export function CheckoutPageClient({
   customer,
 }: {
@@ -67,8 +94,8 @@ export function CheckoutPageClient({
   } = useCart();
   const [paymentMethod, setPaymentMethod] = useState("");
   const [paymentData, setPaymentData] = useState<CheckoutPaymentDataEntry[]>([]);
-  const [message, setMessage] = useState<string | null>(null);
-  const [pending, setPending] = useState(false);
+  const [feedback, setFeedback] = useState<CheckoutFeedback | null>(null);
+  const [submitPhase, setSubmitPhase] = useState<SubmitPhase>("idle");
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [checkoutDraft, setCheckoutDraft] = useState<WooStoreCheckout | null>(null);
   const [wooPaymentsConfigState, setWooPaymentsConfigState] =
@@ -76,7 +103,7 @@ export function CheckoutPageClient({
   const [paymentCollector, setPaymentCollector] = useState<CheckoutPaymentCollector>(
     INITIAL_CHECKOUT_PAYMENT_COLLECTOR,
   );
-  const [success, setSuccess] = useState<{ orderId: number; orderNumber: string } | null>(null);
+  const [success, setSuccess] = useState<CheckoutSuccessState | null>(null);
   const [form, setForm] = useState({
     billing: {
       full_name: [customer?.first_name, customer?.last_name].filter(Boolean).join(" "),
@@ -205,11 +232,11 @@ export function CheckoutPageClient({
   const disabled = useMemo(
     () =>
       !items.length ||
-      pending ||
+      submitPhase !== "idle" ||
       isSyncing ||
       !activePaymentMethod ||
       paymentState.status !== "ready",
-    [activePaymentMethod, isSyncing, items.length, paymentState.status, pending],
+    [activePaymentMethod, isSyncing, items.length, paymentState.status, submitPhase],
   );
   const canLoadDraft = isReady && Boolean(cartToken) && items.length > 0;
 
@@ -305,44 +332,184 @@ export function CheckoutPageClient({
     return Object.keys(nextErrors).length === 0;
   }
 
+  async function finalizeSuccessfulCheckout(nextSuccess: CheckoutSuccessState) {
+    try {
+      await clearCart();
+    } catch (error) {
+      if (isCheckoutDebug) {
+        console.warn("[checkout-page] unable to clear cart after success", error);
+      }
+    }
+
+    setFeedback(null);
+    setSubmitPhase("idle");
+    setSuccess(nextSuccess);
+  }
+
+  async function confirmWooPaymentsCheckout(input: {
+    redirectUrl: string;
+  }) {
+    const confirmation = parseWooPaymentsConfirmationRedirect(input.redirectUrl);
+
+    if (!confirmation) {
+      return {
+        ok: true as const,
+        returnUrl: input.redirectUrl,
+        orderKey: extractOrderKeyFromUrl(input.redirectUrl),
+      };
+    }
+
+    const config = wooPaymentsConfigState.data?.config;
+    if (!config) {
+      return {
+        ok: false as const,
+        message:
+          "Your payment needs one more confirmation step, but secure payment verification is not ready right now.",
+      };
+    }
+
+    const stripe = await getWooPaymentsStripe(config);
+    if (!stripe) {
+      return {
+        ok: false as const,
+        message:
+          "We could not start the final payment confirmation. Please refresh the page and try again.",
+      };
+    }
+
+    const result =
+      confirmation.intentKind === "setup"
+        ? confirmation.confirmationToken
+          ? await stripe.confirmSetup({
+              clientSecret: confirmation.clientSecret,
+              confirmParams: {
+                confirmation_token: confirmation.confirmationToken,
+              },
+              redirect: "if_required",
+            })
+          : await stripe.handleNextAction({
+              clientSecret: confirmation.clientSecret,
+            })
+        : await stripe.handleNextAction({
+            clientSecret: confirmation.clientSecret,
+          });
+
+    const confirmationErrorMessage =
+      result.error ||
+      ("paymentIntent" in result && result.paymentIntent?.status === "requires_action")
+        ? getWooPaymentsConfirmationErrorMessage(
+            result,
+            config.genericErrorMessage || "Your payment confirmation could not be completed.",
+          )
+        : null;
+
+    const intentId = getWooPaymentsIntentId(result);
+    if (!intentId) {
+      return {
+        ok: false as const,
+        message:
+          "We could not verify your payment confirmation. Please contact support if you were charged.",
+      };
+    }
+
+    const response = await fetch("/api/checkout/woopayments-confirm", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        orderId: confirmation.orderId,
+        intentId,
+        nonce: confirmation.nonce,
+        shouldSavePaymentMethod: false,
+        isChangingPayment: false,
+      }),
+    });
+
+    const payload = (await response.json()) as {
+      message?: string;
+      returnUrl?: string;
+    };
+
+    if (!response.ok || !payload.returnUrl) {
+      return {
+        ok: false as const,
+        message:
+          payload.message ??
+          "Your payment was authorized, but we could not finish confirming the order.",
+      };
+    }
+
+    if (confirmationErrorMessage) {
+      return {
+        ok: false as const,
+        message: confirmationErrorMessage,
+      };
+    }
+
+    return {
+      ok: true as const,
+      returnUrl: payload.returnUrl,
+      orderKey: extractOrderKeyFromUrl(payload.returnUrl),
+    };
+  }
+
   async function submit() {
-    setMessage(null);
+    setFeedback(null);
 
     if (!validateBillingFields()) {
-      setMessage("Please correct the highlighted checkout fields.");
+      setFeedback({
+        tone: "error",
+        text: "Please correct the highlighted checkout fields.",
+      });
       return;
     }
 
     if (!cartToken) {
-      setMessage("Your cart session expired. Please refresh the page and try again.");
+      setFeedback({
+        tone: "error",
+        text: "Your cart session expired. Please refresh the page and try again.",
+      });
       return;
     }
 
     if (!activePaymentMethod) {
-      setMessage("No payment method is available for your cart right now.");
+      setFeedback({
+        tone: "error",
+        text: "No payment method is available for your cart right now.",
+      });
       return;
     }
 
     if (paymentState.status !== "ready") {
-      setMessage(paymentState.message ?? "Please complete your payment details to continue.");
+      setFeedback({
+        tone: "error",
+        text: paymentState.message ?? "Please complete your payment details to continue.",
+      });
       return;
     }
 
-    setPending(true);
+    setSubmitPhase("submitting");
     let checkoutPaymentData = paymentData;
 
     if (activePaymentMethod === "woocommerce_payments") {
       if (!paymentCollector.collectPaymentData) {
-        setPending(false);
-        setMessage("Secure card fields are still loading. Please wait a moment and try again.");
+        setSubmitPhase("idle");
+        setFeedback({
+          tone: "error",
+          text: "Secure card fields are still loading. Please wait a moment and try again.",
+        });
         return;
       }
 
       const collection = await paymentCollector.collectPaymentData();
 
       if (!collection.ok) {
-        setPending(false);
-        setMessage(collection.message ?? "We could not verify your card details. Please try again.");
+        setSubmitPhase("idle");
+        setFeedback({
+          tone: "error",
+          text: collection.message ?? "We could not verify your card details. Please try again.",
+        });
         return;
       }
 
@@ -367,14 +534,16 @@ export function CheckoutPageClient({
       message?: string;
       orderId?: number;
       orderNumber?: string;
+      orderKey?: string;
+      redirectUrl?: string | null;
+      paymentStatus?: string;
       fieldErrors?: Record<string, string>;
       wooPaymentsConfig?: WooPaymentsConfigResponse;
       paymentResult?: WooStoreCheckout["payment_result"];
     };
 
-    setPending(false);
-
     if (!response.ok || !payload.orderId || !payload.orderNumber) {
+      setSubmitPhase("idle");
       if (payload.wooPaymentsConfig) {
         setWooPaymentsConfigState({
           status: "success",
@@ -390,30 +559,64 @@ export function CheckoutPageClient({
       );
 
       setFieldErrors((current) => ({ ...current, ...apiFieldErrors }));
-      setMessage(payload.message ?? "We could not place your order. Please review your details and try again.");
+      setFeedback({
+        tone: "error",
+        text:
+          payload.message ??
+          "We could not place your order. Please review your details and try again.",
+      });
       return;
     }
 
-    if (
-      activePaymentMethod === "woocommerce_payments" &&
-      payload.paymentResult?.redirect_url
-    ) {
+    const redirectUrl = payload.redirectUrl ?? payload.paymentResult?.redirect_url ?? null;
+    const confirmation = parseWooPaymentsConfirmationRedirect(redirectUrl);
+
+    if (activePaymentMethod === "woocommerce_payments" && confirmation) {
       if (isCheckoutDebug) {
         console.info("[checkout-page] WooPayments confirmation required", {
-          redirectUrl: payload.paymentResult.redirect_url,
+          redirectUrl,
         });
       }
 
-      // TODO: parse payment_result.redirect_url and run the WooPayments/Stripe intent confirmation
-      // step in-page without falling back to a full redirect.
-      setMessage(
-        "Your payment needs one more confirmation step before we can finish the order.",
-      );
+      setSubmitPhase("confirming");
+      setFeedback({
+        tone: "info",
+        text: "Confirming your payment securely. Please keep this page open.",
+      });
+
+      const confirmationResult = await confirmWooPaymentsCheckout({
+        redirectUrl: confirmation.redirectUrl,
+      });
+
+      if (!confirmationResult.ok) {
+        setSubmitPhase("idle");
+        setFeedback({
+          tone: "error",
+          text: confirmationResult.message,
+        });
+        return;
+      }
+
+      await finalizeSuccessfulCheckout({
+        orderId: payload.orderId,
+        orderNumber: payload.orderNumber,
+        orderKey:
+          payload.orderKey ??
+          confirmationResult.orderKey ??
+          extractOrderKeyFromUrl(confirmationResult.returnUrl),
+        redirectUrl: confirmationResult.returnUrl,
+        paymentStatus: payload.paymentStatus ?? "success",
+      });
       return;
     }
 
-    await clearCart();
-    setSuccess({ orderId: payload.orderId, orderNumber: payload.orderNumber });
+    await finalizeSuccessfulCheckout({
+      orderId: payload.orderId,
+      orderNumber: payload.orderNumber,
+      orderKey: payload.orderKey ?? extractOrderKeyFromUrl(redirectUrl),
+      redirectUrl,
+      paymentStatus: payload.paymentStatus ?? payload.paymentResult?.payment_status ?? "success",
+    });
   }
 
   if (success) {
@@ -427,9 +630,17 @@ export function CheckoutPageClient({
             Thank you for your order.
           </h1>
           <p className="mt-4 text-base leading-7 text-muted">
+            {getSuccessMessage(success.paymentStatus)}
+          </p>
+          <p className="mt-3 text-base leading-7 text-muted">
             Your order number is #{success.orderNumber}. Keep it for future tracking and support.
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-3">
+            {success.redirectUrl ? (
+              <ButtonLink href={success.redirectUrl} variant="secondary">
+                View order details
+              </ButtonLink>
+            ) : null}
             <ButtonLink
               href={`/api/invoice/${success.orderId}?email=${encodeURIComponent(form.billing.email)}`}
             >
@@ -629,7 +840,7 @@ export function CheckoutPageClient({
                         setPaymentMethod(method);
                         setPaymentData([]);
                         setPaymentCollector(INITIAL_CHECKOUT_PAYMENT_COLLECTOR);
-                        setMessage(null);
+                        setFeedback(null);
                       }}
                     />
                     <span className="block text-sm font-semibold text-ink">
@@ -663,7 +874,15 @@ export function CheckoutPageClient({
                 placeholder="Delivery notes, gate code, or support details."
               />
             </label>
-            {message ? <p className="mt-4 text-sm text-[#b55245]">{message}</p> : null}
+            {feedback ? (
+              <p
+                className={`mt-4 text-sm ${
+                  feedback.tone === "error" ? "text-[#b55245]" : "text-forest"
+                }`}
+              >
+                {feedback.text}
+              </p>
+            ) : null}
           </div>
         </div>
 
@@ -702,8 +921,10 @@ export function CheckoutPageClient({
               </div>
             </div>
             <Button type="button" className="mt-2 w-full" disabled={disabled} onClick={submit}>
-              {pending
-                ? "Processing payment..."
+              {submitPhase === "confirming"
+                ? "Confirming payment..."
+                : submitPhase === "submitting"
+                  ? "Processing payment..."
                 : paymentState.status === "ready"
                   ? "Place order"
                   : "Complete payment details"}
