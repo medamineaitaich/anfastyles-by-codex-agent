@@ -849,20 +849,20 @@ export function CheckoutPageClient({
             </div>
           </div>
 
-          <div className={`${checkoutCardClassName} p-6 sm:p-8`}>
+          <div className={`${checkoutCardClassName} p-5 sm:p-8`}>
             <p className={sectionEyebrowClassName}>Payment</p>
             <h2 className="display-font mt-3 text-3xl font-semibold text-ink sm:text-[2rem]">
               Secure payment
             </h2>
-            <div className="mt-5 rounded-[1.3rem] border border-[#dfd7ca] bg-[#f7f3eb] px-4 py-3 text-sm leading-7 text-muted">
+            <p className="mt-4 max-w-2xl text-sm leading-7 text-muted">
               Your card details stay securely on this page with WooPayments.
-            </div>
-            <div className="mt-6 space-y-3">
+            </p>
+            <div className="mt-5 space-y-2">
               {availablePaymentMethods.length ? (
                 availablePaymentMethods.map((method) => (
                   <label
                     key={method}
-                    className={`block rounded-[1.45rem] border px-4 py-4 ${
+                    className={`block rounded-[1.25rem] border px-4 py-3.5 ${
                       activePaymentMethod === method
                         ? "border-forest/50 bg-[#f3f8f0] shadow-[0_12px_24px_rgba(47,87,37,0.08)]"
                         : "border-[#e1dacd] bg-[#fcfbf8]"

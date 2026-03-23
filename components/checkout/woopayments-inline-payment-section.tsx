@@ -169,26 +169,23 @@ export function WooPaymentsInlinePaymentSection({
   }
 
   return (
-    <div className="mt-6 space-y-4 rounded-[1.55rem] border border-[#ded7ca] bg-[#fcfbf8] p-5 sm:p-6">
+    <div className="mt-5 space-y-3">
       <div>
-        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-forest/70">
-          Secure checkout
-        </p>
-        <h3 className="mt-2 text-xl font-semibold text-ink">Secure card payment</h3>
-        <p className="mt-2 text-sm leading-7 text-muted">
+        <h3 className="text-base font-semibold text-ink">Card details</h3>
+        <p className="mt-1 text-sm leading-6 text-muted">
           Enter your card details below to pay securely without leaving this page.
         </p>
       </div>
 
-      <div
-        className={`rounded-[1.4rem] px-4 py-3 text-sm leading-7 ${
+      <p
+        className={`text-sm leading-6 ${
           configState.status === "loading"
-            ? "border border-forest/15 bg-[#f3f8f0] text-forest"
+            ? "text-forest"
             : configState.status === "error"
-              ? "border border-[#b55245]/20 bg-[#fff7f5] text-[#7d3028]"
+              ? "text-[#8f3a31]"
               : canMountSdk
-                ? "border border-forest/15 bg-[#f3f8f0] text-forest"
-                : "border border-[#e2d7ba] bg-[#fbf7ea] text-[#7f6842]"
+                ? "text-forest"
+                : "text-[#7f6842]"
         }`}
       >
         {configState.status === "loading"
@@ -198,25 +195,20 @@ export function WooPaymentsInlinePaymentSection({
             : canMountSdk
               ? "Your card details stay secure and encrypted."
               : "Secure payment fields are not ready right now. Please try again in a moment."}
-      </div>
+      </p>
 
-      <div className="rounded-[1.4rem] border border-[#e1dacd] bg-white px-5 py-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]">
-        <p className="text-sm font-semibold text-ink">Card details</p>
-        <div className="mt-4 min-h-24 rounded-[1.15rem] border border-[#ddd6c8] bg-[#fcfaf6] p-3 sm:p-4">
-          {canMountSdk && config ? (
-            <WooPaymentsPaymentElement
-              config={config}
-              billing={billing}
-              onCollectorChange={(collector) => onCollectorChange?.(collector)}
-            />
-          ) : (
-            <div
-              id="woopayments-inline-sdk-mount"
-              className="min-h-24 rounded-[1rem] border border-dashed border-[#d9d1c1] bg-white"
-            />
-          )}
-        </div>
-      </div>
+      {canMountSdk && config ? (
+        <WooPaymentsPaymentElement
+          config={config}
+          billing={billing}
+          onCollectorChange={(collector) => onCollectorChange?.(collector)}
+        />
+      ) : (
+        <div
+          id="woopayments-inline-sdk-mount"
+          className="min-h-24 rounded-[1rem] border border-dashed border-[#d9d1c1] bg-[#fcfaf6]"
+        />
+      )}
     </div>
   );
 }

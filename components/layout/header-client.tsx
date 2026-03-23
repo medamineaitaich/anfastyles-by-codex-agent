@@ -119,7 +119,7 @@ export function HeaderClient() {
 
       {mobileOpen ? (
         <div className="fixed inset-0 z-50 bg-[#1a2d1e] md:hidden">
-          <div className="flex h-full w-full flex-col overflow-y-auto px-6 pb-8 pt-6 text-white">
+          <div className="content-shell flex h-full flex-col overflow-y-auto pb-8 pt-6 text-white">
             <div className="flex items-start justify-between border-b border-white/10 pb-5">
               <div className="space-y-3">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.32em] text-white/55">

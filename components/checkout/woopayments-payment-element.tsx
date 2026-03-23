@@ -176,7 +176,7 @@ function WooPaymentsPaymentElementInner({
     <div className="space-y-4">
       <div
         id="woopayments-inline-sdk-mount"
-        className="rounded-[1.15rem] border border-[#ddd6c8] bg-white p-3 sm:p-4"
+        className="rounded-[1.05rem] border border-[#ddd6c8] bg-white px-2.5 py-3 sm:px-4 sm:py-4"
       >
         <PaymentElement
           options={{
@@ -193,7 +193,7 @@ function WooPaymentsPaymentElementInner({
         />
       </div>
       {config.isSavedCardsEnabled ? (
-        <label className="flex items-start gap-3 rounded-[1rem] bg-[#f7f3eb] px-4 py-3 text-sm text-muted">
+        <label className="flex items-start gap-3 rounded-[1rem] border border-[#e5ddd0] bg-[#faf7f2] px-3.5 py-3 text-sm text-muted">
           <input
             type="checkbox"
             className="mt-1 h-4 w-4 rounded border-border text-forest"
