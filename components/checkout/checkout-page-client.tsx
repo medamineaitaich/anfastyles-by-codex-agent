@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { WooCustomer, WooStoreCheckout } from "@/lib/woo/types";
 import {
   getDefaultPaymentMethod,
@@ -35,8 +35,6 @@ type CheckoutFeedback = {
 type CheckoutSuccessState = {
   orderId: number;
   orderNumber: string;
-  orderKey: string | null;
-  redirectUrl: string | null;
   paymentStatus: string | null;
 };
 type SubmitPhase = "idle" | "submitting" | "confirming";
@@ -127,9 +125,14 @@ export function CheckoutPageClient({
     },
     customerNote: "",
   });
+  const billingRef = useRef(form.billing);
   const checkoutDraftPaymentMethod = checkoutDraft?.payment_method ?? null;
 
-  const availablePaymentMethods = (() => {
+  useEffect(() => {
+    billingRef.current = form.billing;
+  }, [form.billing]);
+
+  const availablePaymentMethods = useMemo(() => {
     const methods = new Set(paymentMethods);
 
     if (checkoutDraftPaymentMethod) {
@@ -137,7 +140,7 @@ export function CheckoutPageClient({
     }
 
     return Array.from(methods).filter(Boolean);
-  })();
+  }, [checkoutDraftPaymentMethod, paymentMethods]);
 
   const activePaymentMethod =
     paymentMethod && availablePaymentMethods.includes(paymentMethod)
@@ -255,54 +258,56 @@ export function CheckoutPageClient({
     }
 
     let isCancelled = false;
-
-    void (async () => {
-      try {
-        const response = await fetch("/api/checkout", {
-          method: "GET",
-          headers: {
-            "Cart-Token": cartToken,
-          },
-        });
-
-        const payload = (await response.json()) as {
-          message?: string;
-          checkout?: WooStoreCheckout;
-        };
-
-        if (isCancelled) {
-          return;
-        }
-
-        if (!response.ok || !payload.checkout) {
-          setCheckoutDraft(null);
-          if (isCheckoutDebug) {
-            console.warn("[checkout-page] unable to load checkout draft", payload.message);
-          }
-          return;
-        }
-
-        if (isCheckoutDebug) {
-          console.info("[checkout-page] loaded Store API draft", {
-            orderId: payload.checkout.order_id,
-            status: payload.checkout.status,
-            paymentMethod: payload.checkout.payment_method,
+    const timeoutId = window.setTimeout(() => {
+      void (async () => {
+        try {
+          const response = await fetch("/api/checkout", {
+            method: "GET",
+            headers: {
+              "Cart-Token": cartToken,
+            },
           });
-        }
 
-        setCheckoutDraft(payload.checkout);
-      } catch (error) {
-        if (!isCancelled) {
-          if (isCheckoutDebug) {
-            console.error("[checkout-page] failed to load Store API draft", error);
+          const payload = (await response.json()) as {
+            message?: string;
+            checkout?: WooStoreCheckout;
+          };
+
+          if (isCancelled) {
+            return;
           }
-          setCheckoutDraft(null);
+
+          if (!response.ok || !payload.checkout) {
+            setCheckoutDraft(null);
+            if (isCheckoutDebug) {
+              console.warn("[checkout-page] unable to load checkout draft", payload.message);
+            }
+            return;
+          }
+
+          if (isCheckoutDebug) {
+            console.info("[checkout-page] loaded Store API draft", {
+              orderId: payload.checkout.order_id,
+              status: payload.checkout.status,
+              paymentMethod: payload.checkout.payment_method,
+            });
+          }
+
+          setCheckoutDraft(payload.checkout);
+        } catch (error) {
+          if (!isCancelled) {
+            if (isCheckoutDebug) {
+              console.error("[checkout-page] failed to load Store API draft", error);
+            }
+            setCheckoutDraft(null);
+          }
         }
-      }
-    })();
+      })();
+    }, 150);
 
     return () => {
       isCancelled = true;
+      window.clearTimeout(timeoutId);
     };
   }, [canLoadDraft, cartToken]);
 
@@ -609,11 +614,6 @@ export function CheckoutPageClient({
       await finalizeSuccessfulCheckout({
         orderId: payload.orderId,
         orderNumber: payload.orderNumber,
-        orderKey:
-          payload.orderKey ??
-          confirmationResult.orderKey ??
-          extractOrderKeyFromUrl(confirmationResult.returnUrl),
-        redirectUrl: confirmationResult.returnUrl,
         paymentStatus: payload.paymentStatus ?? "success",
       });
       return;
@@ -621,8 +621,6 @@ export function CheckoutPageClient({
     await finalizeSuccessfulCheckout({
       orderId: payload.orderId,
       orderNumber: payload.orderNumber,
-      orderKey: payload.orderKey ?? extractOrderKeyFromUrl(redirectUrl),
-      redirectUrl,
       paymentStatus: payload.paymentStatus ?? payload.paymentResult?.payment_status ?? "success",
     });
   }
@@ -646,15 +644,6 @@ export function CheckoutPageClient({
             Your order number is #{success.orderNumber}. Keep it for future tracking and support.
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-3">
-            {success.redirectUrl ? (
-              <ButtonLink
-                href={success.redirectUrl}
-                variant="secondary"
-                className="rounded-[1.15rem] px-6"
-              >
-                View order details
-              </ButtonLink>
-            ) : null}
             <ButtonLink
               href={`/api/invoice/${success.orderId}?email=${encodeURIComponent(form.billing.email)}`}
               className="rounded-[1.15rem] px-6"
@@ -907,7 +896,7 @@ export function CheckoutPageClient({
             </div>
             <WooPaymentsInlinePaymentSection
               paymentState={paymentState}
-              billing={form.billing}
+              billingRef={billingRef}
               cartToken={cartToken}
               onConfigStateChange={setWooPaymentsConfigState}
               onCollectorChange={setPaymentCollector}

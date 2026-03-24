@@ -7,7 +7,7 @@ import {
   useStripe,
 } from "@stripe/react-stripe-js";
 import { type StripeElementsOptions, type StripeError } from "@stripe/stripe-js";
-import { useEffect, useEffectEvent, useMemo, useState } from "react";
+import { memo, useEffect, useEffectEvent, useMemo, useState, type RefObject } from "react";
 import {
   INITIAL_CHECKOUT_PAYMENT_COLLECTOR,
   adaptWooPaymentsNewCardSdkResultToPaymentData,
@@ -91,11 +91,11 @@ function getStripeErrorMessage(error: StripeError | undefined, fallback: string)
 
 function WooPaymentsPaymentElementInner({
   config,
-  billing,
+  billingRef,
   onCollectorChange,
 }: {
   config: WooPaymentsMountConfig;
-  billing: CheckoutBillingDetails;
+  billingRef: RefObject<CheckoutBillingDetails>;
   onCollectorChange: (collector: CheckoutPaymentCollector) => void;
 }) {
   const stripe = useStripe();
@@ -121,7 +121,7 @@ function WooPaymentsPaymentElementInner({
     const result = await stripe.createPaymentMethod({
       elements,
       params: {
-        billing_details: buildBillingDetails(billing),
+        billing_details: buildBillingDetails(billingRef.current),
       },
     });
 
@@ -212,13 +212,13 @@ function WooPaymentsPaymentElementInner({
   );
 }
 
-export function WooPaymentsPaymentElement({
+export const WooPaymentsPaymentElement = memo(function WooPaymentsPaymentElement({
   config,
-  billing,
+  billingRef,
   onCollectorChange,
 }: {
   config: WooPaymentsMountConfig;
-  billing: CheckoutBillingDetails;
+  billingRef: RefObject<CheckoutBillingDetails>;
   onCollectorChange: (collector: CheckoutPaymentCollector) => void;
 }) {
   const stripePromise = useMemo(
@@ -240,9 +240,9 @@ export function WooPaymentsPaymentElement({
     <Elements stripe={stripePromise} options={elementsOptions}>
       <WooPaymentsPaymentElementInner
         config={config}
-        billing={billing}
+        billingRef={billingRef}
         onCollectorChange={onCollectorChange}
       />
     </Elements>
   );
-}
+});

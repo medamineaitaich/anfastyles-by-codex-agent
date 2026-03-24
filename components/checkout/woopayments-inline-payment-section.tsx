@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import dynamic from "next/dynamic";
+import { memo, useEffect, type RefObject, useState } from "react";
 import {
   INITIAL_WOOPAYMENTS_CONFIG_STATE,
   type CheckoutBillingDetails,
@@ -9,20 +10,35 @@ import {
   type WooPaymentsConfigFetchState,
   type WooPaymentsConfigResponse,
 } from "@/lib/checkout/payment";
-import { WooPaymentsPaymentElement } from "@/components/checkout/woopayments-payment-element";
 const isCheckoutDebug =
   process.env.NODE_ENV !== "production" ||
   process.env.NEXT_PUBLIC_CHECKOUT_DEBUG === "true";
 
-export function WooPaymentsInlinePaymentSection({
+const WooPaymentsPaymentElement = dynamic(
+  () =>
+    import("@/components/checkout/woopayments-payment-element").then(
+      (module) => module.WooPaymentsPaymentElement,
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="space-y-3">
+        <div className="h-24 animate-pulse rounded-[1.05rem] bg-[#f1ece3]" />
+        <div className="h-12 animate-pulse rounded-[1rem] bg-[#f6f2ea]" />
+      </div>
+    ),
+  },
+);
+
+export const WooPaymentsInlinePaymentSection = memo(function WooPaymentsInlinePaymentSection({
   paymentState,
-  billing,
+  billingRef,
   cartToken,
   onConfigStateChange,
   onCollectorChange,
 }: {
   paymentState: CheckoutPaymentState;
-  billing: CheckoutBillingDetails;
+  billingRef: RefObject<CheckoutBillingDetails>;
   cartToken: string | null;
   onConfigStateChange?: (state: WooPaymentsConfigFetchState) => void;
   onCollectorChange?: (collector: CheckoutPaymentCollector) => void;
@@ -200,15 +216,19 @@ export function WooPaymentsInlinePaymentSection({
       {canMountSdk && config ? (
         <WooPaymentsPaymentElement
           config={config}
-          billing={billing}
+          billingRef={billingRef}
           onCollectorChange={(collector) => onCollectorChange?.(collector)}
         />
       ) : (
         <div
           id="woopayments-inline-sdk-mount"
-          className="min-h-24 rounded-[1rem] border border-dashed border-[#d9d1c1] bg-[#fcfaf6]"
+          className={`min-h-24 rounded-[1rem] ${
+            configState.status === "loading"
+              ? "animate-pulse bg-[#f1ece3]"
+              : "border border-dashed border-[#d9d1c1] bg-[#fcfaf6]"
+          }`}
         />
       )}
     </div>
   );
-}
+});
