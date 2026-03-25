@@ -46,14 +46,14 @@ export function ProductCard({
           />
         ) : null}
       </div>
-      <div className="flex flex-1 flex-col gap-5 p-5 sm:p-6">
-        <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-x-4 gap-y-2">
-          <h3 className="display-font pr-2 text-[1.75rem] font-semibold leading-[1.18] text-ink sm:text-[1.9rem]">
-            {product.name}
-          </h3>
-          <p className="pt-1 text-right text-base font-semibold whitespace-nowrap text-forest sm:text-[1.05rem]">
+      <div className="flex flex-1 flex-col gap-4 p-5 sm:p-6">
+        <div className="space-y-2.5">
+          <p className="text-right text-base font-semibold whitespace-nowrap text-forest">
             {formatWooPrice(product.price || product.regular_price || 0)}
           </p>
+          <h3 className="display-font text-2xl font-semibold leading-[1.2] text-ink">
+            {product.name}
+          </h3>
         </div>
         {action && canQuickAdd ? (
           <Button
