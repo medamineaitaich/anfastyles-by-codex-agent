@@ -11,7 +11,7 @@ import { useCart } from "@/providers/cart-provider";
 
 type HeaderClientProps = {
   account: {
-    href: string;
+    href: string | null;
     label: string;
     isAuthenticated: boolean;
   };
@@ -24,9 +24,9 @@ export function HeaderClient({ account }: HeaderClientProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [logoutPending, setLogoutPending] = useState(false);
   const accountActive =
-    pathname === account.href ||
-    (account.isAuthenticated && pathname.startsWith("/account")) ||
+    (account.href !== null && pathname === account.href) ||
     (!account.isAuthenticated && (pathname === "/login" || pathname === "/register"));
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -35,6 +35,19 @@ export function HeaderClient({ account }: HeaderClientProps) {
     router.push(query ? `/shop?search=${encodeURIComponent(query)}` : "/shop");
     setSearchOpen(false);
     setMobileOpen(false);
+  }
+
+  async function handleLogout() {
+    if (logoutPending) {
+      return;
+    }
+
+    setLogoutPending(true);
+    await fetch("/api/auth/logout", { method: "POST" });
+    setMobileOpen(false);
+    setSearchOpen(false);
+    router.push("/");
+    router.refresh();
   }
 
   useEffect(() => {
@@ -56,7 +69,7 @@ export function HeaderClient({ account }: HeaderClientProps) {
 
   return (
     <>
-      <header className="fixed inset-x-0 top-0 z-50 border-b border-border bg-sand/95 backdrop-blur">
+      <header className="fixed inset-x-0 top-0 z-50 border-b border-[#d4c7b3] bg-[#f7f1e7]/98 backdrop-blur">
         <div className="content-shell flex h-20 items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <button
@@ -94,7 +107,10 @@ export function HeaderClient({ account }: HeaderClientProps) {
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={cn("relative text-muted hover:text-ink", active && "text-ink")}
+                  className={cn(
+                    "relative text-ink/80 transition-colors hover:text-ink",
+                    active && "text-ink",
+                  )}
                   onClick={() => {
                     setMobileOpen(false);
                     setSearchOpen(false);
@@ -110,24 +126,37 @@ export function HeaderClient({ account }: HeaderClientProps) {
           </nav>
 
           <div className="flex items-center gap-2">
-            <Link
-              href={account.href}
-              className={cn(
-                "inline-flex h-11 items-center justify-center rounded-full border border-border bg-white/70 px-3 text-sm font-semibold text-ink transition hover:bg-white",
-                accountActive && "border-forest/30 bg-white text-forest",
-              )}
-              aria-label={account.isAuthenticated ? "Open account" : "Open login"}
-              onClick={() => {
-                setMobileOpen(false);
-                setSearchOpen(false);
-              }}
-            >
-              <User className="h-4 w-4" />
-              <span className="ml-2 hidden sm:inline">{account.label}</span>
-            </Link>
+            {account.isAuthenticated ? (
+              <button
+                type="button"
+                className="inline-flex h-11 items-center justify-center rounded-full border border-[#d4c7b3] bg-white px-3 text-sm font-semibold text-ink shadow-[0_8px_20px_rgba(49,39,25,0.08)] transition hover:bg-[#fffdf9] disabled:cursor-not-allowed disabled:opacity-60"
+                aria-label="Log out"
+                onClick={handleLogout}
+                disabled={logoutPending}
+              >
+                <User className="h-4 w-4" />
+                <span className="ml-2 hidden sm:inline">{logoutPending ? "Logging out..." : account.label}</span>
+              </button>
+            ) : (
+              <Link
+                href={account.href ?? "/login"}
+                className={cn(
+                  "inline-flex h-11 items-center justify-center rounded-full border border-[#d4c7b3] bg-white px-3 text-sm font-semibold text-ink shadow-[0_8px_20px_rgba(49,39,25,0.08)] transition hover:bg-[#fffdf9]",
+                  accountActive && "border-forest/30 bg-white text-forest",
+                )}
+                aria-label="Open login"
+                onClick={() => {
+                  setMobileOpen(false);
+                  setSearchOpen(false);
+                }}
+              >
+                <User className="h-4 w-4" />
+                <span className="ml-2 hidden sm:inline">{account.label}</span>
+              </Link>
+            )}
             <button
               type="button"
-              className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-border bg-white/70"
+              className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-[#d4c7b3] bg-white text-ink shadow-[0_8px_20px_rgba(49,39,25,0.08)]"
               aria-label="Search products"
               onClick={() => setSearchOpen((current) => !current)}
             >
@@ -135,7 +164,7 @@ export function HeaderClient({ account }: HeaderClientProps) {
             </button>
             <button
               type="button"
-              className="relative inline-flex h-11 w-11 items-center justify-center rounded-full border border-border bg-white/70"
+              className="relative inline-flex h-11 w-11 items-center justify-center rounded-full border border-[#d4c7b3] bg-white text-ink shadow-[0_8px_20px_rgba(49,39,25,0.08)]"
               aria-label="Open cart"
               onClick={openDrawer}
             >
@@ -210,22 +239,37 @@ export function HeaderClient({ account }: HeaderClientProps) {
               </p>
             </div>
             <nav className="mt-7 space-y-3">
-              <Link
-                href={account.href}
-                className={cn(
-                  "flex items-center justify-between rounded-[1.6rem] border px-5 py-4 text-base font-semibold shadow-[0_14px_34px_rgba(0,0,0,0.08)]",
-                  accountActive
-                    ? "border-white bg-white text-[#1a2d1e]"
-                    : "border-white/10 bg-white/[0.07] text-white hover:bg-white/[0.12]",
-                )}
-                onClick={() => setMobileOpen(false)}
-              >
-                <span className="flex items-center gap-3">
-                  <User className="h-4 w-4" />
-                  {account.label}
-                </span>
-                <span className="text-sm opacity-60">/</span>
-              </Link>
+              {account.isAuthenticated ? (
+                <button
+                  type="button"
+                  className="flex w-full items-center justify-between rounded-[1.6rem] border border-white/10 bg-white/[0.07] px-5 py-4 text-base font-semibold text-white shadow-[0_14px_34px_rgba(0,0,0,0.08)] hover:bg-white/[0.12] disabled:cursor-not-allowed disabled:opacity-60"
+                  onClick={handleLogout}
+                  disabled={logoutPending}
+                >
+                  <span className="flex items-center gap-3">
+                    <User className="h-4 w-4" />
+                    {logoutPending ? "Logging out..." : account.label}
+                  </span>
+                  <span className="text-sm opacity-60">/</span>
+                </button>
+              ) : (
+                <Link
+                  href={account.href ?? "/login"}
+                  className={cn(
+                    "flex items-center justify-between rounded-[1.6rem] border px-5 py-4 text-base font-semibold shadow-[0_14px_34px_rgba(0,0,0,0.08)]",
+                    accountActive
+                      ? "border-white bg-white text-[#1a2d1e]"
+                      : "border-white/10 bg-white/[0.07] text-white hover:bg-white/[0.12]",
+                  )}
+                  onClick={() => setMobileOpen(false)}
+                >
+                  <span className="flex items-center gap-3">
+                    <User className="h-4 w-4" />
+                    {account.label}
+                  </span>
+                  <span className="text-sm opacity-60">/</span>
+                </Link>
+              )}
               {NAV_LINKS.map((link) => (
                 <Link
                   key={link.href}

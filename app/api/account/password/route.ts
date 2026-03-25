@@ -8,10 +8,38 @@ const passwordSchema = z.object({
   newPassword: z.string().min(8),
 });
 
+function formatPasswordValidationMessage(error: z.ZodError) {
+  const labels: Record<string, string> = {
+    currentPassword: "Current password",
+    newPassword: "New password",
+  };
+
+  const issues = error.issues
+    .map((issue) => {
+      const field = issue.path[0];
+
+      if (typeof field !== "string") {
+        return null;
+      }
+
+      if (issue.code === "too_small" && issue.minimum === 8) {
+        return `${labels[field] ?? "This field"} must be at least 8 characters long.`;
+      }
+
+      return issue.message;
+    })
+    .filter((message): message is string => Boolean(message));
+
+  return issues[0] ?? "Please check your password details and try again.";
+}
+
 export async function POST(request: Request) {
   const session = await getSession();
   if (!session) {
-    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    return NextResponse.json(
+      { message: "Please sign in again before changing your password." },
+      { status: 401 },
+    );
   }
 
   try {
@@ -30,7 +58,7 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           message:
-            "The WooCommerce backend did not confirm password sync for headless login. This storefront can update profile data, but password changes still need backend support confirmation.",
+            "Your password was updated, but we could not confirm it from the storefront. Please try signing in again, or contact support if the issue continues.",
         },
         { status: 409 },
       );
@@ -38,7 +66,12 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ ok: true });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unable to update password.";
+    const message =
+      error instanceof z.ZodError
+        ? formatPasswordValidationMessage(error)
+        : error instanceof Error
+          ? error.message
+          : "Unable to update password.";
     return NextResponse.json({ message }, { status: 400 });
   }
 }

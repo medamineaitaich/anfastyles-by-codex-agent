@@ -11,8 +11,8 @@ export async function SiteHeader({
   return (
     <HeaderClient
       account={{
-        href: session ? "/account" : "/login",
-        label: session ? "Account" : "Login",
+        href: session ? null : "/login",
+        label: session ? "Logout" : "Login",
         isAuthenticated: Boolean(session),
       }}
     />
