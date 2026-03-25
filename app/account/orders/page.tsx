@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ButtonLink } from "@/components/ui/button";
 import { getSession } from "@/lib/session";
 import { getOrdersForCustomer } from "@/lib/woo/client";
 import { formatDate, formatWooPrice } from "@/lib/utils";
@@ -25,9 +26,17 @@ export default async function OrdersPage() {
               </h2>
               <p className="mt-2 text-sm text-muted">{formatDate(order.date_created)}</p>
             </div>
-            <div className="text-right">
+            <div className="flex flex-col items-start gap-3 text-left sm:items-end sm:text-right">
               <p className="text-lg font-semibold text-ink">{formatWooPrice(order.total)}</p>
-              <Link href={`/account/orders/${order.id}`} className="mt-2 inline-block text-sm font-semibold text-forest">
+              <div className="flex flex-wrap gap-3 sm:justify-end">
+                <ButtonLink href={`/api/invoice/${order.id}`} variant="secondary" className="h-10 px-5">
+                  Download invoice
+                </ButtonLink>
+              </div>
+              <Link
+                href={`/account/orders/${order.id}`}
+                className="inline-block text-sm font-semibold text-forest"
+              >
                 View details
               </Link>
             </div>
