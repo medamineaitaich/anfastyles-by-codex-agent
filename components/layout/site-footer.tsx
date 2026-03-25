@@ -66,7 +66,7 @@ export function SiteFooter() {
               Medait LLC
             </a>
           </p>
-          <p>© 2026 {BRAND.name}. All rights reserved.</p>
+          <p>&copy; 2026 {BRAND.name}. All rights reserved.</p>
         </div>
       </div>
     </footer>

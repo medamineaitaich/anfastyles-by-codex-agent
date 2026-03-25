@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -10,7 +10,8 @@ export function PasswordForm() {
   const [message, setMessage] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
-  async function submit() {
+  async function submit(event?: FormEvent<HTMLFormElement>) {
+    event?.preventDefault();
     setPending(true);
     setMessage(null);
     const response = await fetch("/api/account/password", {
@@ -31,7 +32,7 @@ export function PasswordForm() {
 
   return (
     <div className="card-surface p-6">
-      <div className="grid gap-5">
+      <form className="grid gap-5" onSubmit={submit}>
         <label className="grid gap-2 text-sm font-semibold text-ink">
           Current Password
           <Input
@@ -48,11 +49,11 @@ export function PasswordForm() {
             onChange={(event) => setNewPassword(event.target.value)}
           />
         </label>
-        <Button type="button" disabled={pending} onClick={submit}>
+        <Button type="submit" disabled={pending}>
           {pending ? "Updating..." : "Change password"}
         </Button>
         {message ? <p className="text-sm text-muted">{message}</p> : null}
-      </div>
+      </form>
     </div>
   );
 }

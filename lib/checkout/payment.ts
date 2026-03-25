@@ -380,6 +380,10 @@ export function adaptWooPaymentsPaymentMethodErrorToPaymentData(input: {
 }
 
 export function getDefaultPaymentMethod(methods: string[]) {
+  if (methods.includes("stripe")) {
+    return "stripe";
+  }
+
   if (methods.includes("woocommerce_payments")) {
     return "woocommerce_payments";
   }

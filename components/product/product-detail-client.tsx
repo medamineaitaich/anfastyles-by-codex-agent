@@ -132,6 +132,17 @@ export function ProductDetailClient({
   const displayPrice = selectedVariation?.price || product.price || product.regular_price;
   const displayDescription = selectedVariation?.description || product.description;
   const shortDescription = product.short_description?.trim();
+  const canAddCurrentSelection =
+    product.type === "variable"
+      ? Boolean(
+          selectedVariation &&
+            selectedVariation.purchasable &&
+            selectedVariation.stock_status !== "outofstock",
+        )
+      : product.purchasable && product.stock_status !== "outofstock";
+  const purchaseMessage = canAddCurrentSelection
+    ? "Ready to add to your cart."
+    : "This selection is currently unavailable.";
 
   function isOptionAvailable(attributeName: string, option: string) {
     const nextAttributes = { ...selectedAttributes, [attributeName]: option };
@@ -139,7 +150,7 @@ export function ProductDetailClient({
   }
 
   function addCurrentSelection() {
-    if (product.type === "grouped" || product.type === "external") {
+    if (product.type === "grouped" || product.type === "external" || !canAddCurrentSelection) {
       return;
     }
 
@@ -188,6 +199,7 @@ export function ProductDetailClient({
                   src={activeImage || gallery[0]}
                   alt={product.name}
                   fill
+                  priority
                   className="object-cover"
                   sizes="(max-width: 1280px) 100vw, 56vw"
                 />
@@ -300,6 +312,7 @@ export function ProductDetailClient({
                       type="button"
                       className="inline-flex h-11 w-11 items-center justify-center"
                       onClick={() => setQuantity((current) => Math.max(1, current - 1))}
+                      aria-label="Decrease quantity"
                     >
                       -
                     </button>
@@ -308,14 +321,20 @@ export function ProductDetailClient({
                       type="button"
                       className="inline-flex h-11 w-11 items-center justify-center"
                       onClick={() => setQuantity((current) => current + 1)}
+                      aria-label="Increase quantity"
                     >
                       +
                     </button>
                   </div>
-                  <Button className="w-full sm:flex-1" onClick={addCurrentSelection}>
-                    Add to cart
+                  <Button
+                    className="w-full sm:flex-1"
+                    disabled={!canAddCurrentSelection}
+                    onClick={addCurrentSelection}
+                  >
+                    {canAddCurrentSelection ? "Add to cart" : "Unavailable"}
                   </Button>
                 </div>
+                <p className="text-sm text-muted">{purchaseMessage}</p>
               </div>
             ) : (
               <div className="space-y-4 rounded-[2rem] border border-border bg-white/80 p-5 lg:p-6">
@@ -392,8 +411,7 @@ export function ProductDetailClient({
                 ))
               ) : (
                 <div className="card-surface rounded-[1.7rem] p-5 text-sm leading-7 text-muted">
-                  No published reviews yet. This section is connected and ready for live WooCommerce
-                  reviews.
+                  No published reviews yet. Be the first to share your experience with this piece.
                 </div>
               )}
             </div>

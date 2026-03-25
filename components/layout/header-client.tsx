@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Menu, Search, ShoppingBag, X } from "lucide-react";
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { NAV_LINKS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { useCart } from "@/providers/cart-provider";
@@ -25,6 +25,23 @@ export function HeaderClient() {
     setMobileOpen(false);
   }
 
+  useEffect(() => {
+    if (!mobileOpen) {
+      return;
+    }
+
+    const previousBodyOverflow = document.body.style.overflow;
+    const previousHtmlOverflow = document.documentElement.style.overflow;
+
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousBodyOverflow;
+      document.documentElement.style.overflow = previousHtmlOverflow;
+    };
+  }, [mobileOpen]);
+
   return (
     <>
       <header className="fixed inset-x-0 top-0 z-50 border-b border-border bg-sand/95 backdrop-blur">
@@ -42,6 +59,10 @@ export function HeaderClient() {
               href="/"
               className="py-1"
               aria-label="AnfaStyles home"
+              onClick={() => {
+                setMobileOpen(false);
+                setSearchOpen(false);
+              }}
             >
               <Image
                 src="/branding/anfastyles-logo.png"
@@ -62,6 +83,10 @@ export function HeaderClient() {
                   key={link.href}
                   href={link.href}
                   className={cn("relative text-muted hover:text-ink", active && "text-ink")}
+                  onClick={() => {
+                    setMobileOpen(false);
+                    setSearchOpen(false);
+                  }}
                 >
                   {link.label}
                   {active ? (
@@ -120,7 +145,12 @@ export function HeaderClient() {
       </header>
 
       {mobileOpen ? (
-        <div className="fixed inset-0 z-[70] h-dvh bg-[#1a2d1e] md:hidden">
+        <div
+          className="fixed inset-0 z-[70] h-dvh bg-[#1a2d1e] md:hidden"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Mobile navigation"
+        >
           <div className="content-shell flex h-full min-h-dvh flex-col overflow-y-auto pb-8 pt-6 text-white">
             <div className="flex items-start justify-between border-b border-white/10 pb-5">
               <div className="space-y-3">

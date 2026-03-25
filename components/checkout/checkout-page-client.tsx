@@ -41,10 +41,31 @@ type SubmitPhase = "idle" | "submitting" | "confirming";
 const isCheckoutDebug =
   process.env.NODE_ENV !== "production" ||
   process.env.NEXT_PUBLIC_CHECKOUT_DEBUG === "true";
+const DISALLOWED_PAYMENT_METHOD_PATTERNS = [
+  "woocommerce_payments",
+  "woopay",
+  "amazon pay",
+  "amazon_pay",
+  "amazonpay",
+];
+
+function isAllowedPaymentMethod(method: string) {
+  const normalized = method.trim().toLowerCase();
+
+  if (!normalized) {
+    return false;
+  }
+
+  return !DISALLOWED_PAYMENT_METHOD_PATTERNS.some((pattern) => normalized.includes(pattern));
+}
 
 function formatPaymentMethodLabel(method: string) {
+  if (method === "stripe") {
+    return "Stripe";
+  }
+
   if (method === "woocommerce_payments") {
-    return "WooPayments";
+    return "Card";
   }
 
   return method
@@ -55,12 +76,8 @@ function formatPaymentMethodLabel(method: string) {
 }
 
 function describePaymentMethod(method: string) {
-  if (method === "woocommerce_payments") {
-    return "Pay securely with your card without leaving this checkout page.";
-  }
-
-  if (method === "stripe") {
-    return "This payment option is temporarily unavailable while secure card fields are being prepared.";
+  if (method === "stripe" || method === "woocommerce_payments") {
+    return "Pay securely with your bank card during checkout.";
   }
 
   return "This payment method is available for your current cart.";
@@ -139,7 +156,7 @@ export function CheckoutPageClient({
       methods.add(checkoutDraftPaymentMethod);
     }
 
-    return Array.from(methods).filter(Boolean);
+    return Array.from(methods).filter((method) => isAllowedPaymentMethod(String(method)));
   }, [checkoutDraftPaymentMethod, paymentMethods]);
 
   const activePaymentMethod =
@@ -625,6 +642,71 @@ export function CheckoutPageClient({
     });
   }
 
+  if (!success && !isReady) {
+    return (
+      <section className="content-shell py-10 sm:py-14 lg:py-16">
+        <div className="mb-8 rounded-[2.2rem] border border-[#e1dacd] bg-[#f7f3eb] px-6 py-8 shadow-[0_18px_50px_rgba(29,39,29,0.05)] sm:px-8 lg:px-10">
+          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-forest/70">
+            Checkout
+          </p>
+          <h1 className="display-font mt-3 text-4xl font-semibold tracking-tight text-ink sm:text-5xl">
+            Preparing your checkout
+          </h1>
+          <p className="mt-4 max-w-2xl text-base leading-7 text-muted">
+            We are loading your cart and secure payment details.
+          </p>
+        </div>
+        <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_25rem] xl:items-start">
+          <div className={`${checkoutCardClassName} animate-pulse p-6 sm:p-8`}>
+            <div className="h-6 w-40 rounded bg-[#ece5d9]" />
+            <div className="mt-7 grid gap-5 sm:grid-cols-2">
+              <div className="h-14 rounded-[1.15rem] bg-[#f1ece3] sm:col-span-2" />
+              <div className="h-14 rounded-[1.15rem] bg-[#f1ece3] sm:col-span-2" />
+              <div className="h-14 rounded-[1.15rem] bg-[#f1ece3] sm:col-span-2" />
+              <div className="h-14 rounded-[1.15rem] bg-[#f1ece3] sm:col-span-2" />
+            </div>
+          </div>
+          <aside className="h-fit rounded-[1.85rem] border border-[#ddd6c8] bg-[#f7f3eb] p-6">
+            <div className="animate-pulse space-y-4">
+              <div className="h-6 w-32 rounded bg-[#ece5d9]" />
+              <div className="h-5 rounded bg-[#ece5d9]" />
+              <div className="h-5 rounded bg-[#ece5d9]" />
+              <div className="h-14 rounded-[1.2rem] bg-[#dfe8d9]" />
+            </div>
+          </aside>
+        </div>
+      </section>
+    );
+  }
+
+  if (!success && isReady && !items.length) {
+    return (
+      <section className="content-shell py-10 sm:py-14 lg:py-16">
+        <div
+          className={`${checkoutCardClassName} mx-auto max-w-3xl px-6 py-10 text-center sm:px-10 sm:py-12`}
+        >
+          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-forest/70">
+            Checkout
+          </p>
+          <h1 className="display-font mt-4 text-4xl font-semibold text-ink sm:text-5xl">
+            Your cart is empty
+          </h1>
+          <p className="mx-auto mt-4 max-w-2xl text-base leading-7 text-muted">
+            Add a few pieces to your cart before starting checkout.
+          </p>
+          <div className="mt-8 flex flex-wrap justify-center gap-3">
+            <ButtonLink href="/shop" className="rounded-[1.15rem] px-6">
+              Browse the shop
+            </ButtonLink>
+            <ButtonLink href="/cart" variant="secondary" className="rounded-[1.15rem] px-6">
+              View cart
+            </ButtonLink>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   if (success) {
     return (
       <section className="content-shell py-10 sm:py-14 lg:py-16">
@@ -841,10 +923,10 @@ export function CheckoutPageClient({
           <div className={`${checkoutCardClassName} p-5 sm:p-8`}>
             <p className={sectionEyebrowClassName}>Payment</p>
             <h2 className="display-font mt-3 text-3xl font-semibold text-ink sm:text-[2rem]">
-              Secure payment
+              Secure card payment
             </h2>
             <p className="mt-4 max-w-2xl text-sm leading-7 text-muted">
-              Your card details stay securely on this page with WooPayments.
+              Pay securely with your bank card during checkout.
             </p>
             <div className="mt-5 space-y-2">
               {availablePaymentMethods.length ? (
@@ -890,7 +972,7 @@ export function CheckoutPageClient({
                 ))
               ) : (
                 <div className="rounded-[1.4rem] border border-[#b55245]/30 bg-[#b55245]/5 p-4 text-sm text-[#7d3028]">
-                  No payment methods are available for your cart right now.
+                  Secure card payment is currently unavailable. Please try again in a moment.
                 </div>
               )}
             </div>
@@ -928,7 +1010,7 @@ export function CheckoutPageClient({
         </div>
 
         <aside
-          className="h-fit rounded-[1.85rem] border border-[#ddd6c8] bg-[#f7f3eb] p-6 shadow-[0_26px_60px_rgba(29,39,29,0.06)] lg:sticky lg:top-24 lg:p-7"
+          className="h-fit rounded-[1.85rem] border border-[#ddd6c8] bg-[#f7f3eb] p-6 shadow-[0_26px_60px_rgba(29,39,29,0.06)] xl:sticky xl:top-24 xl:self-start xl:p-7"
         >
           <p className={sectionEyebrowClassName}>Review</p>
           <h2 className="display-font mt-3 text-3xl font-semibold text-ink">Order summary</h2>

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -17,7 +17,8 @@ export function RegisterForm() {
   const [message, setMessage] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
-  async function submit() {
+  async function submit(event?: FormEvent<HTMLFormElement>) {
+    event?.preventDefault();
     setPending(true);
     setMessage(null);
 
@@ -41,7 +42,7 @@ export function RegisterForm() {
 
   return (
     <div className="card-surface mx-auto max-w-xl p-8">
-      <div className="grid gap-5">
+      <form className="grid gap-5" onSubmit={submit}>
         <div className="grid gap-5 sm:grid-cols-2">
           <label className="grid gap-2 text-sm font-semibold text-ink">
             First Name
@@ -80,7 +81,7 @@ export function RegisterForm() {
             }
           />
         </label>
-        <Button type="button" className="w-full" disabled={pending} onClick={submit}>
+        <Button type="submit" className="w-full" disabled={pending}>
           {pending ? "Creating account..." : "Create account"}
         </Button>
         {message ? <p className="text-sm text-[#b55245]">{message}</p> : null}
@@ -90,7 +91,7 @@ export function RegisterForm() {
             Sign in
           </Link>
         </p>
-      </div>
+      </form>
     </div>
   );
 }

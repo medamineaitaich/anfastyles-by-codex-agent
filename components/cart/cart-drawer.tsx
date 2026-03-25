@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Minus, Plus, ShoppingBag, Trash2, X } from "lucide-react";
+import { useEffect } from "react";
 import { ButtonLink } from "@/components/ui/button";
 import { formatPriceFromCents } from "@/lib/utils";
 import { useCart } from "@/providers/cart-provider";
@@ -20,6 +21,23 @@ export function CartDrawer() {
     freeShippingRemainingCents,
   } = useCart();
 
+  useEffect(() => {
+    if (!isDrawerOpen) {
+      return;
+    }
+
+    const previousBodyOverflow = document.body.style.overflow;
+    const previousHtmlOverflow = document.documentElement.style.overflow;
+
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousBodyOverflow;
+      document.documentElement.style.overflow = previousHtmlOverflow;
+    };
+  }, [isDrawerOpen]);
+
   return (
     <div
       className={`fixed inset-0 z-50 transition ${isDrawerOpen ? "pointer-events-auto" : "pointer-events-none"}`}
@@ -31,6 +49,9 @@ export function CartDrawer() {
       />
       <aside
         className={`absolute right-0 top-0 flex h-full w-full max-w-xl flex-col bg-cream shadow-2xl transition-transform ${isDrawerOpen ? "translate-x-0" : "translate-x-full"}`}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Shopping cart"
       >
         <div className="flex items-center justify-between border-b border-border px-6 py-5">
           <div>
@@ -83,7 +104,7 @@ export function CartDrawer() {
                           type="button"
                           className="inline-flex h-10 w-10 items-center justify-center"
                           onClick={() => updateQuantity(item.key, item.quantity - 1)}
-                          aria-label="Decrease quantity"
+                          aria-label={`Decrease quantity for ${item.name}`}
                         >
                           <Minus className="h-4 w-4" />
                         </button>
@@ -94,7 +115,7 @@ export function CartDrawer() {
                           type="button"
                           className="inline-flex h-10 w-10 items-center justify-center"
                           onClick={() => updateQuantity(item.key, item.quantity + 1)}
-                          aria-label="Increase quantity"
+                          aria-label={`Increase quantity for ${item.name}`}
                         >
                           <Plus className="h-4 w-4" />
                         </button>
@@ -119,7 +140,8 @@ export function CartDrawer() {
               </div>
               <h3 className="display-font text-3xl font-semibold text-ink">Your cart is empty</h3>
               <p className="mt-3 max-w-sm text-sm leading-7 text-muted">
-                Start with a small collection of thoughtfully printed essentials and we will keep the checkout ready.
+                Start with a small collection of thoughtfully printed essentials and we will keep
+                the checkout ready.
               </p>
               <ButtonLink href="/shop" className="mt-6" onClick={closeDrawer}>
                 Browse the shop

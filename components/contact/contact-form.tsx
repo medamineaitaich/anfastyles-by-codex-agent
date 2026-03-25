@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type FormEvent } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -65,7 +65,8 @@ export function ContactForm({ defaultSubject }: { defaultSubject?: string }) {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
-  async function submit() {
+  async function submit(event?: FormEvent<HTMLFormElement>) {
+    event?.preventDefault();
     const nextErrors = validateForm(form);
     if (Object.keys(nextErrors).length > 0) {
       setErrors(nextErrors);
@@ -115,7 +116,7 @@ export function ContactForm({ defaultSubject }: { defaultSubject?: string }) {
 
   return (
     <div className="card-surface mx-auto max-w-2xl p-8">
-      <div className="grid gap-5">
+      <form className="grid gap-5" onSubmit={submit}>
         {successMessage ? (
           <div className="rounded-[1.75rem] border border-emerald-300 bg-emerald-50 px-5 py-6 text-center text-emerald-900">
             <p className="text-2xl font-semibold">Thanks for contacting us.</p>
@@ -202,10 +203,10 @@ export function ContactForm({ defaultSubject }: { defaultSubject?: string }) {
           />
           {errors.message ? <p className="text-xs font-medium text-red-700">{errors.message}</p> : null}
         </label>
-        <Button type="button" className="w-full" disabled={pending} onClick={submit}>
+        <Button type="submit" className="w-full" disabled={pending}>
           {pending ? "Sending..." : "Send Message"}
         </Button>
-      </div>
+      </form>
     </div>
   );
 }

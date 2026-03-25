@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -13,7 +13,8 @@ export function LoginForm({ redirectTo = "/account" }: { redirectTo?: string }) 
   const [message, setMessage] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
-  async function submit() {
+  async function submit(event?: FormEvent<HTMLFormElement>) {
+    event?.preventDefault();
     setPending(true);
     setMessage(null);
 
@@ -37,7 +38,7 @@ export function LoginForm({ redirectTo = "/account" }: { redirectTo?: string }) 
 
   return (
     <div className="card-surface mx-auto max-w-xl p-8">
-      <div className="space-y-5">
+      <form className="space-y-5" onSubmit={submit}>
         <label className="grid gap-2 text-sm font-semibold text-ink">
           Email Address
           <Input value={email} type="email" onChange={(event) => setEmail(event.target.value)} />
@@ -50,7 +51,7 @@ export function LoginForm({ redirectTo = "/account" }: { redirectTo?: string }) 
             onChange={(event) => setPassword(event.target.value)}
           />
         </label>
-        <Button type="button" className="w-full" disabled={pending} onClick={submit}>
+        <Button type="submit" className="w-full" disabled={pending}>
           {pending ? "Signing in..." : "Sign In"}
         </Button>
         {message ? <p className="text-sm text-[#b55245]">{message}</p> : null}
@@ -60,7 +61,7 @@ export function LoginForm({ redirectTo = "/account" }: { redirectTo?: string }) 
             Create an account
           </Link>
         </p>
-      </div>
+      </form>
     </div>
   );
 }

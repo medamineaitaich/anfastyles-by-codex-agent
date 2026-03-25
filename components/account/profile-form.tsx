@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useState, useTransition, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -43,7 +43,8 @@ export function ProfileForm({ customer }: { customer: WooCustomer }) {
     setForm(buildProfileForm(customer));
   }, [customer]);
 
-  async function submit() {
+  async function submit(event?: FormEvent<HTMLFormElement>) {
+    event?.preventDefault();
     setPending(true);
     setMessage(null);
     const response = await fetch("/api/account/profile", {
@@ -74,7 +75,7 @@ export function ProfileForm({ customer }: { customer: WooCustomer }) {
 
   return (
     <div className="card-surface p-6">
-      <div className="grid gap-5">
+      <form className="grid gap-5" onSubmit={submit}>
         <div className="grid gap-5 sm:grid-cols-2">
           <label className="grid gap-2 text-sm font-semibold text-ink">
             First Name
@@ -129,11 +130,11 @@ export function ProfileForm({ customer }: { customer: WooCustomer }) {
             />
           </label>
         </div>
-        <Button type="button" disabled={pending || isRefreshing} onClick={submit}>
+        <Button type="submit" disabled={pending || isRefreshing}>
           {pending || isRefreshing ? "Saving..." : "Save changes"}
         </Button>
         {message ? <p className="text-sm text-muted">{message}</p> : null}
-      </div>
+      </form>
     </div>
   );
 }

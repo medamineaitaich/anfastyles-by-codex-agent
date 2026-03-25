@@ -159,7 +159,7 @@ function WooPaymentsPaymentElementInner({
         : {
             ...INITIAL_CHECKOUT_PAYMENT_COLLECTOR,
             status: "mounting",
-            message: "Loading WooPayments secure fields.",
+            message: "Loading secure card fields.",
           };
 
     onCollectorChange(collector);
