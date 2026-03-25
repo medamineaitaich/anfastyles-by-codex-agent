@@ -115,6 +115,11 @@ export async function saveProfileSnapshot(customer: ProfileSnapshot) {
   });
 }
 
+export async function clearProfileSnapshot() {
+  const cookieStore = await cookies();
+  cookieStore.delete(PROFILE_SNAPSHOT_COOKIE);
+}
+
 export async function getProfileSnapshot(customerId: number) {
   const cookieStore = await cookies();
   const token = cookieStore.get(PROFILE_SNAPSHOT_COOKIE)?.value;

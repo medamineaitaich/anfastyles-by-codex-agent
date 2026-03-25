@@ -3,19 +3,31 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Menu, Search, ShoppingBag, X } from "lucide-react";
+import { Menu, Search, ShoppingBag, User, X } from "lucide-react";
 import { useEffect, useState, type FormEvent } from "react";
 import { NAV_LINKS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { useCart } from "@/providers/cart-provider";
 
-export function HeaderClient() {
+type HeaderClientProps = {
+  account: {
+    href: string;
+    label: string;
+    isAuthenticated: boolean;
+  };
+};
+
+export function HeaderClient({ account }: HeaderClientProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { openDrawer, totalItems } = useCart();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const accountActive =
+    pathname === account.href ||
+    (account.isAuthenticated && pathname.startsWith("/account")) ||
+    (!account.isAuthenticated && (pathname === "/login" || pathname === "/register"));
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -98,6 +110,21 @@ export function HeaderClient() {
           </nav>
 
           <div className="flex items-center gap-2">
+            <Link
+              href={account.href}
+              className={cn(
+                "inline-flex h-11 items-center justify-center rounded-full border border-border bg-white/70 px-3 text-sm font-semibold text-ink transition hover:bg-white",
+                accountActive && "border-forest/30 bg-white text-forest",
+              )}
+              aria-label={account.isAuthenticated ? "Open account" : "Open login"}
+              onClick={() => {
+                setMobileOpen(false);
+                setSearchOpen(false);
+              }}
+            >
+              <User className="h-4 w-4" />
+              <span className="ml-2 hidden sm:inline">{account.label}</span>
+            </Link>
             <button
               type="button"
               className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-border bg-white/70"
@@ -183,6 +210,22 @@ export function HeaderClient() {
               </p>
             </div>
             <nav className="mt-7 space-y-3">
+              <Link
+                href={account.href}
+                className={cn(
+                  "flex items-center justify-between rounded-[1.6rem] border px-5 py-4 text-base font-semibold shadow-[0_14px_34px_rgba(0,0,0,0.08)]",
+                  accountActive
+                    ? "border-white bg-white text-[#1a2d1e]"
+                    : "border-white/10 bg-white/[0.07] text-white hover:bg-white/[0.12]",
+                )}
+                onClick={() => setMobileOpen(false)}
+              >
+                <span className="flex items-center gap-3">
+                  <User className="h-4 w-4" />
+                  {account.label}
+                </span>
+                <span className="text-sm opacity-60">/</span>
+              </Link>
               {NAV_LINKS.map((link) => (
                 <Link
                   key={link.href}

@@ -6,6 +6,15 @@ export async function SiteHeader({
 }: {
   sessionPromise: Promise<SessionPayload | null>;
 }) {
-  await sessionPromise;
-  return <HeaderClient />;
+  const session = await sessionPromise;
+
+  return (
+    <HeaderClient
+      account={{
+        href: session ? "/account" : "/login",
+        label: session ? "Account" : "Login",
+        isAuthenticated: Boolean(session),
+      }}
+    />
+  );
 }

@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import {
+  clearProfileSnapshot,
   createSession,
   getSession,
   saveCustomerHint,
-  saveProfileSnapshot,
 } from "@/lib/session";
 import { getCustomer, updateCustomer } from "@/lib/woo/client";
 
@@ -80,7 +80,7 @@ export async function PATCH(request: Request) {
 
     await createSession(nextSession);
     await saveCustomerHint(nextSession);
-    await saveProfileSnapshot(updated);
+    await clearProfileSnapshot();
 
     return NextResponse.json({
       message: "Account updated.",
