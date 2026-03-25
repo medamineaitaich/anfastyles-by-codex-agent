@@ -23,7 +23,7 @@ export function ProductCard({
 
   return (
     <article
-      className="group card-surface cursor-pointer overflow-hidden rounded-[2rem]"
+      className="group card-surface flex h-full cursor-pointer flex-col overflow-hidden rounded-[2rem]"
       onClick={() => router.push(`/shop/${product.slug}`)}
       onKeyDown={(event) => {
         if (event.key === "Enter" || event.key === " ") {
@@ -46,16 +46,18 @@ export function ProductCard({
           />
         ) : null}
       </div>
-      <div className="space-y-4 p-5">
-        <div className="flex items-start justify-between gap-3">
-          <h3 className="display-font text-2xl font-semibold text-ink">{product.name}</h3>
-          <p className="text-base font-semibold text-forest">
+      <div className="flex flex-1 flex-col gap-5 p-5 sm:p-6">
+        <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-x-4 gap-y-2">
+          <h3 className="display-font pr-2 text-[1.75rem] font-semibold leading-[1.18] text-ink sm:text-[1.9rem]">
+            {product.name}
+          </h3>
+          <p className="pt-1 text-right text-base font-semibold whitespace-nowrap text-forest sm:text-[1.05rem]">
             {formatWooPrice(product.price || product.regular_price || 0)}
           </p>
         </div>
         {action && canQuickAdd ? (
           <Button
-            className="w-full gap-2"
+            className="mt-auto w-full gap-2"
             onClick={(event) => {
               event.preventDefault();
               event.stopPropagation();
@@ -69,7 +71,7 @@ export function ProductCard({
           <ButtonLink
             href={`/shop/${product.slug}`}
             variant="secondary"
-            className="w-full"
+            className="mt-auto w-full"
             onClick={(event) => {
               event.stopPropagation();
             }}
